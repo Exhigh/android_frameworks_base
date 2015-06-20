@@ -219,4 +219,38 @@
     <!-- Ambient Music Pixel-Like string -->
     <string name="ambientmusic_songinfo">%s by %s</string>
 
+    <!-- Content description of the location tile in quick settings when on, battery saving mode -->
+    <string name="accessibility_quick_settings_location_battery_saving">Location reporting: battery saving mode.</string>
+    <!-- Content description of the location tile in quick settings when on, sensors only mode -->
+    <string name="accessibility_quick_settings_location_gps_only">Location reporting: sensors only mode.</string>
+    <!-- Content description of the location tile in quick settings when on, high accuracy mode -->
+    <string name="accessibility_quick_settings_location_high_accuracy">Location reporting: high accuracy mode.</string>
+
+    <!-- QuickSettings: Location (On, low-power) -->
+    <string name="quick_settings_location_battery_saving_label">Battery saving</string>
+    <string name="quick_settings_location_battery_saving_label_twoline">Battery\nsaving</string>
+    <!-- QuickSettings: Location (On, gps-only) -->
+    <string name="quick_settings_location_gps_only_label">GPS only</string>
+    <string name="quick_settings_location_gps_only_label_twoline">GPS only</string>
+    <!-- QuickSettings: Location (On, high-accuracy) -->
+    <string name="quick_settings_location_high_accuracy_label">High accuracy</string>
+    <string name="quick_settings_location_high_accuracy_label_twoline">High\naccuracy</string>
+
+    <!-- QuickSettings: Location detail panel title -->
+    <string name="quick_settings_location_detail_title">Location</string>
+    <!-- QuickSettings: Location detail panel menu title -->
+    <string name="quick_settings_location_detail_menu_title">Select mode:</string>
+    <!-- Location detail panel, high accuracy location mode -->
+    <string name="quick_settings_location_detail_mode_high_accuracy_title">High accuracy</string>
+    <!-- Location detail panel, battery saving location mode -->
+    <string name="quick_settings_location_detail_mode_battery_saving_title">Battery saving</string>
+    <!-- Location detail panel, device only location mode -->
+    <string name="quick_settings_location_detail_mode_sensors_only_title">Device only</string>
+    <!-- Location detail panel, description for high accuracy mode -->
+    <string name="quick_settings_location_detail_mode_high_accuracy_description">Use GPS, Wi\u2011Fi, Bluetooth, or cellular networks to determine location </string>
+    <!-- Location detail panel, description for battery saving mode -->
+    <string name="quick_settings_location_detail_mode_battery_saving_description">Use Wi\u2011Fi, Bluetooth, or cellular networks to determine location</string>
+    <!-- Location detail panel, description for sensors only mode -->
+    <string name="quick_settings_location_detail_mode_sensors_only_description">Use GPS to determine your location</string>
+
 </resources>
