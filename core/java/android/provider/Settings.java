@@ -4990,12 +4990,19 @@ public final class Settings {
          */
         public static final String LOCKCLOCK_FONT_SIZE = "lockclock_font_size";
 
-	    /**
+	/**
          * Switch to Enable/Disable ScreenShot Shortcut.
          *
          * @hide
          */
         public static final String SCREEN_SHOT_SHORTCUT_SWITCH = "screen_shot_shortcut";
+
+        /**
+         * Whether to notification when the battery is fully charged
+         * @hide
+         */
+        public static final String BATTERY_FULLY_CHARGED_NOTIF = "battery_fully_charged_notif";
+
 
         /**
          * Whether to blink flashlight for incoming calls
