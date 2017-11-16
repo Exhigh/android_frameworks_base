@@ -312,5 +312,9 @@
     <string name="onthego_channel_name">Main</string>
     <string name="quick_settings_onthego_label">On-The-Go</string> 
 
+    <!-- Reboot/Recovery QS Tile -->
+    <string name="quick_settings_reboot_label">Reboot</string>
+    <string name="quick_settings_reboot_recovery_label">Recovery</string>
+
 
 </resources>
