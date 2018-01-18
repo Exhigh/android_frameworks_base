@@ -71,6 +71,7 @@ public class NotificationMediaManager implements Dumpable {
                 if (mListener != null) {
                     setMediaPlaying();
                 }
+                setMediaPlaying();
             }
         }
 
@@ -82,6 +83,7 @@ public class NotificationMediaManager implements Dumpable {
             }
             mMediaMetadata = metadata;
             mPresenter.updateMediaMetaData(true, true);
+
             if (mListener != null) {
                 setMediaPlaying();
             }
@@ -90,6 +92,7 @@ public class NotificationMediaManager implements Dumpable {
         @Override
         public void onSessionDestroyed() {
             super.onSessionDestroyed();
+
             if (mListener != null) {
                 setMediaPlaying();
             }
@@ -200,9 +203,11 @@ public class NotificationMediaManager implements Dumpable {
                 mMediaController = controller;
                 mMediaController.registerCallback(mMediaListener);
                 mMediaMetadata = mMediaController.getMetadata();
+
                 if (mListener != null) {
                     setMediaPlaying();
                 }
+
                 if (DEBUG_MEDIA) {
                     Log.v(TAG, "DEBUG_MEDIA: insert listener, found new controller: "
                             + mMediaController + ", receive metadata: " + mMediaMetadata);
@@ -300,6 +305,7 @@ public class NotificationMediaManager implements Dumpable {
                         + mMediaController.getPackageName());
             }
             mMediaController.unregisterCallback(mMediaListener);
+
             if (mListener != null) {
                 setMediaPlaying();
             }
@@ -317,21 +323,21 @@ public class NotificationMediaManager implements Dumpable {
                     mEntryManager.getNotificationData().getAllNotifications();
             int N = activeNotifications.size();
             final String pkg = mMediaController.getPackageName();
+
             for (int i = 0; i < N; i++) {
                 final NotificationData.Entry entry = activeNotifications.get(i);
                 if (entry.notification.getPackageName().equals(pkg)) {
-                    // NotificationEntryManager onAsyncInflationFinished will get called
-                    // when colors and album are loaded for the notification, then we can send
-                    // those info to Pulse
                     mEntryManager.setEntryToRefresh(entry);
                     break;
                 }
             }
+
             if (mListener != null) {
                 mListener.onMediaUpdated(true);
             }
         } else {
             mEntryManager.setEntryToRefresh(null);
+            mPresenter.setAmbientMusicInfo(null, null);
             if (mListener != null) {
                 mListener.onMediaUpdated(false);
             }
@@ -342,5 +348,10 @@ public class NotificationMediaManager implements Dumpable {
         if (mListener != null) {
             mListener.setPulseColors(isColorizedMEdia, colors);
         }
+
+    }
+
+    public void setMediaNotificationText(String notificationText) {
+        mPresenter.setAmbientMusicInfo(mMediaMetadata, notificationText);
     }
 }

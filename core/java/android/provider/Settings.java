@@ -5416,6 +5416,18 @@ public final class Settings {
         public static final String LOCKSCREEN_CHARGING_ANIMATION = "lockscreen_charging_animation";
 
         /**
+         * Force an Ambient notification when a new media track is being played
+         * 0 - disabled
+         * 1 - show track info within normal Ambient Display and force a new Ambient clean layout when skipping tracks
+         * @hide
+         */
+        public static final String FORCE_AMBIENT_FOR_MEDIA = "force_ambient_for_media";
+
+        /** @hide */
+        private static final Validator FORCE_AMBIENT_FOR_MEDIA_VALIDATOR =
+              new SettingsValidators.InclusiveIntegerRangeValidator(0, 1);
+
+        /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *
@@ -5524,6 +5536,7 @@ public final class Settings {
             NETWORK_TRAFFIC_EXPANDED_STATUS_BAR_STATE,
             FORCE_EXPANDED_NOTIFICATIONS,
             OMNI_USE_OLD_MOBILETYPE,
+            FORCE_AMBIENT_FOR_MEDIA,
         };
 
         /**
@@ -5695,6 +5708,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(HIDE_LOCKSCREEN_STATUS_BAR);
             PRIVATE_SETTINGS.add(OMNI_USE_OLD_MOBILETYPE);
             PRIVATE_SETTINGS.add(QS_TILE_STYLE);
+            PRIVATE_SETTINGS.add(FORCE_AMBIENT_FOR_MEDIA);
         }
 
         /**
@@ -5858,6 +5872,7 @@ public final class Settings {
             VALIDATORS.put(NETWORK_TRAFFIC_EXPANDED_STATUS_BAR_STATE, NETWORK_TRAFFIC_EXPANDED_STATUS_BAR_STATE_VALIDATOR);
             VALIDATORS.put(FORCE_EXPANDED_NOTIFICATIONS,FORCE_EXPANDED_NOTIFICATIONS_VALIDATOR);
             VALIDATORS.put(OMNI_USE_OLD_MOBILETYPE, OMNI_USE_OLD_MOBILETYPE_VALIDATOR);
+            VALIDATORS.put(FORCE_AMBIENT_FOR_MEDIA,FORCE_AMBIENT_FOR_MEDIA_VALIDATOR);
         }
 
         /**

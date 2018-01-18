@@ -175,4 +175,7 @@
    <java-symbol type="id" name="notification_media_elapsed_time" />
    <java-symbol type="id" name="notification_media_total_time" />
 
+   <!-- Whether or not ambient media display opt-in setting is available on this device -->
+  <java-symbol type="bool" name="config_canForceDozeNotifications" />
+
 </resources>

@@ -57,5 +57,8 @@
     <!-- Defines the sysfs attribute path used by pocket bridge
         to communicate pocket state to the pocket judge kernel driver. -->
     <string name="config_pocketBridgeSysfsInpocket"></string>
+    
+    <!-- Whether or not ambient media display opt-in setting is available on this device -->
+    <bool name="config_canForceDozeNotifications">true</bool>
 
 </resources>
