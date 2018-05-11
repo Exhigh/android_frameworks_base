@@ -219,7 +219,9 @@
 
     <!-- OmniJaws -->
     <uses-permission android:name="org.omnirom.omnijaws.READ_WEATHER" />
-
+    
+    <!--Switch data sub-->
+    <uses-permission android:name="android.permission.WRITE_APN_SETTINGS"/>
 
     <uses-permission android:name="android.permission.ONE_HANDED_MODE" />
 
