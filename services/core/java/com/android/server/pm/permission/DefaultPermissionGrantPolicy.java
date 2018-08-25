@@ -974,6 +974,13 @@ public final class DefaultPermissionGrantPolicy {
         if (pixelwallsPackage != null) {
             grantRuntimePermissions(pixelwallsPackage, STORAGE_PERMISSIONS, true, userId);
         }
+        // Google Calendar
+        PackageParser.Package googlecalendarPackage = getSystemPackage("com.google.android.calendar");
+        if (googlecalendarPackage != null && doesPackageSupportRuntimePermissions(googlecalendarPackage)) {
+            grantRuntimePermissions(googlecalendarPackage, CALENDAR_PERMISSIONS, true, userId);
+            grantRuntimePermissions(googlecalendarPackage, CONTACTS_PERMISSIONS, true, userId);
+            grantRuntimePermissions(googlecalendarPackage, PHONE_PERMISSIONS, userId);
+        }
 
         if (mPermissionGrantedCallback != null) {
             mPermissionGrantedCallback.onDefaultRuntimePermissionsGranted(userId);
