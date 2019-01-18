@@ -314,7 +314,6 @@ import android.location.LocationManager;
 import android.media.audiofx.AudioEffect;
 import android.metrics.LogMaker;
 import android.net.Proxy;
-import android.net.ProxyInfo;
 import android.net.Uri;
 import android.os.BatteryStats;
 import android.os.Binder;
@@ -3000,6 +2999,8 @@ public class ActivityManagerService extends IActivityManager.Stub
             if (phase == PHASE_SYSTEM_SERVICES_READY) {
                 mService.mBatteryStatsService.systemServicesReady();
                 mService.mServices.systemServicesReady();
+            } else if (phase == PHASE_ACTIVITY_MANAGER_READY) {
+                mService.startBroadcastObservers();
             }
         }
 
@@ -3187,10 +3188,27 @@ public class ActivityManagerService extends IActivityManager.Stub
             sKillHandler = new KillHandler(sKillThread.getLooper());
         }
 
+        // Broadcast policy parameters
+        final BroadcastConstants foreConstants = new BroadcastConstants(
+                Settings.Global.BROADCAST_FG_CONSTANTS);
+        foreConstants.TIMEOUT = BROADCAST_FG_TIMEOUT;
+
+        final BroadcastConstants backConstants = new BroadcastConstants(
+                Settings.Global.BROADCAST_BG_CONSTANTS);
+        backConstants.TIMEOUT = BROADCAST_BG_TIMEOUT;
+
+        final BroadcastConstants offloadConstants = new BroadcastConstants(
+                Settings.Global.BROADCAST_OFFLOAD_CONSTANTS);
+        offloadConstants.TIMEOUT = BROADCAST_BG_TIMEOUT;
+        // by default, no "slow" policy in this queue
+        offloadConstants.SLOW_TIME = Integer.MAX_VALUE;
+
         mFgBroadcastQueue = new BroadcastQueue(this, mHandler,
-                "foreground", BROADCAST_FG_TIMEOUT, false);
+                "foreground", foreConstants, false);
         mBgBroadcastQueue = new BroadcastQueue(this, mHandler,
-                "background", BROADCAST_BG_TIMEOUT, true);
+                "background", backConstants, true);
+        mOffloadBroadcastQueue = new BroadcastQueue(this, mHandler,
+                "offload", offloadConstants, true);
         mBroadcastQueues[0] = mFgBroadcastQueue;
         mBroadcastQueues[1] = mBgBroadcastQueue;
 
@@ -8794,6 +8812,15 @@ public class ActivityManagerService extends IActivityManager.Stub
     }
 
     @Override
+    public boolean isIntentSenderABroadcast(IIntentSender pendingResult) {
+        if (pendingResult instanceof PendingIntentRecord) {
+            final PendingIntentRecord res = (PendingIntentRecord) pendingResult;
+            return res.key.type == ActivityManager.INTENT_SENDER_BROADCAST;
+        }
+        return false;
+    }
+
+    @Override
     public Intent getIntentForIntentSender(IIntentSender pendingResult) {
         enforceCallingPermission(Manifest.permission.GET_INTENT_SENDER_INTENT,
                 "getIntentForIntentSender()");
@@ -13141,7 +13168,6 @@ public class ActivityManagerService extends IActivityManager.Stub
         synchronized (this) {
             mSystemProvidersInstalled = true;
         }
-
         mConstants.start(mContext.getContentResolver());
         mCoreSettingsObserver = new CoreSettingsObserver(this);
         mFontScaleSettingObserver = new FontScaleSettingObserver();
@@ -15596,6 +15622,12 @@ public class ActivityManagerService extends IActivityManager.Stub
 
             traceLog.traceEnd(); // ActivityManagerStartApps
             traceLog.traceEnd(); // PhaseActivityManagerReady
+        }
+    }
+
+    private void startBroadcastObservers() {
+        for (BroadcastQueue queue : mBroadcastQueues) {
+            queue.start(mContext.getContentResolver());
         }
     }
 
@@ -22075,10 +22107,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                     requiredPermissions, appOp, brOptions, receivers, resultTo, resultCode,
                     resultData, resultExtras, ordered, sticky, false, userId);
 
-            if (DEBUG_BROADCAST) Slog.v(TAG_BROADCAST, "Enqueueing ordered broadcast " + r
-                    + ": prev had " + queue.mOrderedBroadcasts.size());
-            if (DEBUG_BROADCAST) Slog.i(TAG_BROADCAST,
-                    "Enqueueing broadcast " + r.intent.getAction());
+            if (DEBUG_BROADCAST) Slog.v(TAG_BROADCAST, "Enqueueing ordered broadcast " + r);
 
             final BroadcastRecord oldRecord =
                     replacePending ? queue.replaceOrderedBroadcastLocked(r) : null;
@@ -24495,14 +24524,12 @@ public class ActivityManagerService extends IActivityManager.Stub
      * Returns true if things are idle enough to perform GCs.
      */
     private final boolean canGcNowLocked() {
-        boolean processingBroadcasts = false;
         for (BroadcastQueue q : mBroadcastQueues) {
-            if (q.mParallelBroadcasts.size() != 0 || q.mOrderedBroadcasts.size() != 0) {
-                processingBroadcasts = true;
+            if (!q.mParallelBroadcasts.isEmpty() || !q.mDispatcher.isEmpty()) {
+                return false;
             }
         }
-        return !processingBroadcasts
-                && (isSleepingLocked() || mStackSupervisor.allResumedActivitiesIdle());
+        return mAtmInternal.canGcNow();
     }
 
     /**

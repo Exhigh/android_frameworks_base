@@ -201,6 +201,8 @@ class AlarmManagerService extends SystemService {
     boolean mLastWakeLockUnimportantForLogging;
     ArrayList<Alarm> mPendingNonWakeupAlarms = new ArrayList<>();
     ArrayList<InFlight> mInFlight = new ArrayList<>();
+    private final ArrayList<AlarmManagerInternal.InFlightListener> mInFlightListeners =
+            new ArrayList<>();
     AlarmHandler mHandler;
     ClockReceiver mClockReceiver;
     final DeliveryTracker mDeliveryTracker = new DeliveryTracker();
@@ -1182,6 +1184,10 @@ class AlarmManagerService extends SystemService {
             mAlarmType = alarmType;
         }
 
+        boolean isBroadcast() {
+            return mPendingIntent != null && mPendingIntent.isBroadcast();
+        }
+
         @Override
         public String toString() {
             return "InFlight{"
@@ -1217,6 +1223,20 @@ class AlarmManagerService extends SystemService {
             }
 
             proto.end(token);
+        }
+    }
+
+    private void notifyBroadcastAlarmPendingLocked(int uid) {
+        final int numListeners = mInFlightListeners.size();
+        for (int i = 0; i < numListeners; i++) {
+            mInFlightListeners.get(i).broadcastAlarmPending(uid);
+        }
+    }
+
+    private void notifyBroadcastAlarmCompleteLocked(int uid) {
+        final int numListeners = mInFlightListeners.size();
+        for (int i = 0; i < numListeners; i++) {
+            mInFlightListeners.get(i).broadcastAlarmComplete(uid);
         }
     }
 
@@ -1797,6 +1817,13 @@ class AlarmManagerService extends SystemService {
         public void removeAlarmsForUid(int uid) {
             synchronized (mLock) {
                 removeLocked(uid);
+            }
+        }
+
+        @Override
+        public void registerInFlightListener(InFlightListener callback) {
+            synchronized (mLock) {
+                mInFlightListeners.add(callback);
             }
         }
     }
@@ -4273,7 +4300,11 @@ class AlarmManagerService extends SystemService {
 
         private InFlight removeLocked(PendingIntent pi, Intent intent) {
             for (int i = 0; i < mInFlight.size(); i++) {
-                if (mInFlight.get(i).mPendingIntent == pi) {
+                final InFlight inflight = mInFlight.get(i);
+                if (inflight.mPendingIntent == pi) {
+                    if (pi.isBroadcast()) {
+                        notifyBroadcastAlarmCompleteLocked(inflight.mUid);
+                    }
                     return mInFlight.remove(i);
                 }
             }
@@ -4497,9 +4528,14 @@ class AlarmManagerService extends SystemService {
                     alarm.packageName, alarm.type, alarm.statsTag, nowELAPSED);
             mInFlight.add(inflight);
             mBroadcastRefCount++;
+            if (inflight.isBroadcast()) {
+                notifyBroadcastAlarmPendingLocked(alarm.uid);
+            }
             qcNsrmExt.addTriggeredUid((alarm.operation != null) ?
                                     alarm.operation.getCreatorUid() :
                                     alarm.uid);
+
+
             if (allowWhileIdle) {
                 // Record the last time this uid handled an ALLOW_WHILE_IDLE alarm.
                 mLastAllowWhileIdleDispatch.put(alarm.creatorUid, nowELAPSED);
