@@ -1814,6 +1814,11 @@ class AlarmManagerService extends SystemService {
      */
     private final class LocalService implements AlarmManagerInternal {
         @Override
+        public boolean isIdling() {
+            return isIdlingImpl();
+        }
+
+        @Override
         public void removeAlarmsForUid(int uid) {
             synchronized (mLock) {
                 removeLocked(uid);
@@ -2661,6 +2666,12 @@ class AlarmManagerService extends SystemService {
     long getNextWakeFromIdleTimeImpl() {
         synchronized (mLock) {
             return mNextWakeFromIdle != null ? mNextWakeFromIdle.whenElapsed : Long.MAX_VALUE;
+        }
+    }
+
+    private boolean isIdlingImpl() {
+        synchronized (mLock) {
+            return mPendingIdleUntil != null;
         }
     }
 
