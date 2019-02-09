@@ -58,11 +58,12 @@ import com.android.systemui.qs.QSDetail.Callback;
 import com.android.systemui.statusbar.phone.PhoneStatusBarView;
 import com.android.systemui.statusbar.phone.StatusBarIconController;
 import com.android.systemui.statusbar.phone.StatusBarIconController.TintedIconManager;
-import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.phone.StatusIconContainer;
+import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.policy.DarkIconDispatcher;
 import com.android.systemui.statusbar.policy.DarkIconDispatcher.DarkReceiver;
 import com.android.systemui.statusbar.policy.DateView;
+import com.android.systemui.statusbar.policy.NetworkTraffic;
 import com.android.systemui.statusbar.policy.NextAlarmController;
 import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.tuner.TunerService;
@@ -136,8 +137,10 @@ public class QuickStatusBarHeader extends RelativeLayout implements
     private boolean mHeaderImageEnabled;
 
 
+
     private class RRSettingsObserver extends ContentObserver {
         RRSettingsObserver(Handler handler) {
+    private NetworkTraffic mTraffic;
             super(handler);
    }
 
@@ -219,13 +222,11 @@ public class QuickStatusBarHeader extends RelativeLayout implements
         mClockView.setQsHeader();
         mDateView = findViewById(R.id.date);
         mDateView.setOnClickListener(this);
-
+        mTraffic = findViewById(R.id.networkTraffic);
 
         Dependency.get(TunerService.class).addTunable(this,
                 StatusBarIconController.ICON_BLACKLIST);
-
         updateSettings();
-
         
 
     }
@@ -300,6 +301,7 @@ public class QuickStatusBarHeader extends RelativeLayout implements
     protected void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         mLandscape = newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE;
+	    mTraffic.useWallpaperTextColor(mLandscape);
         updateResources();
 
         updateStatusbarProperties();

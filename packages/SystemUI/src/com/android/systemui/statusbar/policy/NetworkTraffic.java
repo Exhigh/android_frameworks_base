@@ -27,7 +27,6 @@ import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.TextView;
-
 import com.android.settingslib.Utils;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.policy.DarkIconDispatcher.DarkReceiver;
@@ -325,5 +324,16 @@ public class NetworkTraffic extends TextView {
         } else {
             setVisibility(View.GONE);
         }
+    }
+
+    public void useWallpaperTextColor(boolean shouldUseWallpaperTextColor) {
+        if (shouldUseWallpaperTextColor) {
+            mTintColor = Utils.getColorAttr(mContext, R.attr.wallpaperTextColor);
+	        updateTrafficDrawable();
+        } else {
+	        final Resources resources = getResources();
+	        mTintColor = resources.getColor(android.R.color.white);
+	        updateTrafficDrawable();
+	    }
     }
 }
