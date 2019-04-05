@@ -210,7 +210,7 @@ public class Dependency extends SystemUI {
                 new UserInfoControllerImpl(mContext));
 
         mProviders.put(BatteryController.class, () ->
-                new BatteryControllerImpl(mContext));
+                new BatteryControllerImpl(mContext, getDependency(EnhancedEstimates.class)));
 
         mProviders.put(ColorDisplayController.class, () ->
                 new ColorDisplayController(mContext));
