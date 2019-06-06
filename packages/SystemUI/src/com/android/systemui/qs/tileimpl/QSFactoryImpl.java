@@ -40,6 +40,7 @@ import com.android.systemui.qs.tiles.DndTile;
 import com.android.systemui.qs.tiles.LteTile;
 import com.android.systemui.qs.tiles.FlashlightTile;
 import com.android.systemui.qs.tiles.RebootTile;
+import com.android.systemui.qs.tiles.GamingModeTile;
 import com.android.systemui.qs.tiles.HeadsUpTile;
 import com.android.systemui.qs.tiles.HotspotTile;
 import com.android.systemui.qs.tiles.IntentTile;
@@ -172,6 +173,8 @@ public class QSFactoryImpl implements QSFactory {
                 return new CPUInfoTile(mHost);
             case "onthego":
                 return new OnTheGoTile(mHost);
+            case "gaming":
+                return new GamingModeTile(mHost);
         }
 
         // Intent tiles.

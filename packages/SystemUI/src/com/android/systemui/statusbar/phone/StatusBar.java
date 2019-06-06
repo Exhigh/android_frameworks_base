@@ -2255,6 +2255,16 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
 
     @Override
     public boolean shouldPeek(Entry entry, StatusBarNotification sbn) {
+
+            // get the info from the currently running task
+            boolean gamingModeOn = Settings.System.getInt(mContext.getContentResolver(),
+                    Settings.System.ENABLE_GAMING_MODE, 1) == 1;   
+
+            if (gamingModeOn && isGameAppDialer(sbn.getPackageName())) {
+            return true;
+        }
+ 
+
         if (mIsOccluded && !isDozing()) {
             boolean devicePublic = mLockscreenUserManager.
                     isLockscreenPublicMode(mLockscreenUserManager.getCurrentUserId());
@@ -2288,6 +2298,12 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         }
         return true;
     }
+
+    private boolean isGameAppDialer(String packageName) {
+        return packageName.equals("com.android.dialer")
+            || packageName.equals("com.google.android.dialer");
+    }
+
 
     @Override  // NotificationData.Environment
     public String getCurrentMediaNotificationKey() {
