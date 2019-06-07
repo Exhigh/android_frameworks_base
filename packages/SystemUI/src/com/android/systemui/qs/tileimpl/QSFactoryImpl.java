@@ -40,7 +40,6 @@ import com.android.systemui.qs.tiles.DndTile;
 import com.android.systemui.qs.tiles.LteTile;
 import com.android.systemui.qs.tiles.FlashlightTile;
 import com.android.systemui.qs.tiles.RebootTile;
-import com.android.systemui.qs.tiles.GamingModeTile;
 import com.android.systemui.qs.tiles.HeadsUpTile;
 import com.android.systemui.qs.tiles.HotspotTile;
 import com.android.systemui.qs.tiles.IntentTile;
@@ -65,12 +64,9 @@ import com.android.systemui.qs.tiles.WorkModeTile;
 import com.android.systemui.qs.QSTileHost;
 import com.android.systemui.util.leak.GarbageMonitor;
 import com.android.systemui.qs.tiles.WeatherTile;
-<<<<<<< HEAD
-import com.android.systemui.qs.tiles.GamingModeTile;
 import com.android.systemui.qs.tiles.AODTile;
 import com.android.systemui.qs.tiles.OneHandTile;
-=======
->>>>>>> parent of 23695fe65e74... SystemUI: Add Gaming mode tile
+
 
 public class QSFactoryImpl implements QSFactory {
 
@@ -173,8 +169,6 @@ public class QSFactoryImpl implements QSFactory {
                 return new CPUInfoTile(mHost);
             case "onthego":
                 return new OnTheGoTile(mHost);
-            case "gaming":
-                return new GamingModeTile(mHost);
         }
 
         // Intent tiles.
