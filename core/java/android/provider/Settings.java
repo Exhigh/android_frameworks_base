@@ -5426,6 +5426,12 @@ public final class Settings {
         public static final String SHOW_BATTERY_ESTIMATE = "show_battery_estimate";
 
         /**
+         * Gaming Mode master switch
+         * @hide
+         */
+        public static final String GAMING_MODE_MASTER_SWITCH = "gaming_mode_master_switch";
+    
+        /**
          * Save the user defined brightness state
          */
         public static final String GAMING_SCREEN_BRIGHTNESS_MODE = "gaming_screen_brightness_mode";
