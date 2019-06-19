@@ -248,7 +248,7 @@
     <!-- Text for switch default data sub in expanded CellularTile -->
     <string name="use_data">Use %s for data</string>
 
-        <!-- FireHound Gaming -->
+        <!-- Gaming Mode -->
     <string name="notification_channel_gaming">Gaming Mode</string>
 
 
