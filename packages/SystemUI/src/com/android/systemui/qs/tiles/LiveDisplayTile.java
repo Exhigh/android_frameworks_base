@@ -17,7 +17,6 @@
 
 package com.android.systemui.qs.tiles;
 
-<<<<<<< HEAD
 import static lineageos.hardware.LiveDisplayManager.FEATURE_MANAGED_OUTDOOR_MODE;
 import static lineageos.hardware.LiveDisplayManager.MODE_AUTO;
 import static lineageos.hardware.LiveDisplayManager.MODE_DAY;
