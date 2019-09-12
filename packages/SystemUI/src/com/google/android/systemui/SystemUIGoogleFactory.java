@@ -1,5 +1,6 @@
 package com.google.android.systemui;
 
+<<<<<<< HEAD
 import android.app.AlarmManager;
 import android.content.Context;
 import android.util.ArrayMap;
@@ -43,4 +44,9 @@ public class SystemUIGoogleFactory extends SystemUIFactory {
         return new LiveWallpaperScrimController(scrimBehind, scrimInFront, lockscreenWallpaper,
                 scrimStateListener, scrimVisibleListener, dozeParameters, alarmManager);
     }
+=======
+import com.android.systemui.SystemUIFactory;
+
+public class SystemUIGoogleFactory extends SystemUIFactory {
+>>>>>>> c912bf7ec16... Initial import of SystemUIGoogleFactory
 }
