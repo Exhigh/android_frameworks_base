@@ -244,6 +244,11 @@
     <!-- Kill app from slim recents -->
     <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
 
+    <!-- Pixel Live Wallpapers -->
+    <protected-broadcast android:name="com.breel.wallpapers.NOTIFICATION_RECEIVED"/>
+    <permission android:name="com.breel.wallpapers.notifications"/>
+    <uses-permission android:name="com.breel.wallpapers.notifications"/>
+
     <application
         android:name=".SystemUIApplication"
         android:persistent="true"
