@@ -164,9 +164,8 @@ public class QSFactoryImpl implements QSFactory {
                 return new SoundTile(mHost);
             case "cpuinfo":
                 return new CPUInfoTile(mHost);
-            case "reboot":
-                return new RebootTile(mHost);
-
+            case "onthego":
+                return new OnTheGoTile(mHost);
         }
 
         // Intent tiles.
