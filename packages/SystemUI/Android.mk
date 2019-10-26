@@ -60,11 +60,11 @@ LOCAL_STATIC_JAVA_LIBRARIES := \
     SystemUI-tags \
     SystemUI-proto \
     org.lineageos.platform.internal \
-    apache-commons-lang-2.6 \
     trail-drawing \
     rebound \
     guava \
     vendor.lineage.biometrics.fingerprint.inscreen-V1.0-java
+
 
 LOCAL_JAVA_LIBRARIES := telephony-common \
     android.car \
@@ -98,10 +98,5 @@ include frameworks/base/packages/SettingsLib/common.mk
 LOCAL_AAPT_FLAGS := --extra-packages com.android.keyguard
 
 include $(BUILD_PACKAGE)
-
-include $(CLEAR_VARS)
-LOCAL_PREBUILT_STATIC_JAVA_LIBRARIES := \
-    apache-commons-lang-2.6:libs/commons-lang-2.6.jar
-include $(BUILD_MULTI_PREBUILT)
 
 include $(call all-makefiles-under,$(LOCAL_PATH))
