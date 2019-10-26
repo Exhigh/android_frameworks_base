@@ -1,7 +1,6 @@
 /*
  * Copyright (C) 2009 The Android Open Source Project
  * Copyright (C) 2018 CypherOS
- * Copyright (C) 2018 PixelExperience
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.systemui.ambient.play;
+package android.ambient.play;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Locale;
+
+import android.annotation.WorkerThread;
 
 /**
  * This class represents the header of a WAVE format audio file, which usually
@@ -32,11 +32,11 @@ import java.util.Locale;
  * <li> bitsPerSample - usually 16 for PCM, 8 for ALAW, or 8 for ULAW.
  * <li> numBytes - size of audio data after this header, in bytes.
  * </ul>
- * <p>
- * Not yet ready to be supported, so
  *
+ * Not yet ready to be supported, so
  * @hide
  */
+@WorkerThread
 public class WaveFormat {
 
     // follows WAVE format in http://ccrma.stanford.edu/courses/422/projects/WaveFormat
@@ -45,17 +45,11 @@ public class WaveFormat {
 
     private static final int HEADER_LENGTH = 44;
 
-    /**
-     * Indicates PCM format.
-     */
+    /** Indicates PCM format. */
     public static final short FORMAT_PCM = 1;
-    /**
-     * Indicates ALAW format.
-     */
+    /** Indicates ALAW format. */
     public static final short FORMAT_ALAW = 6;
-    /**
-     * Indicates ULAW format.
-     */
+    /** Indicates ULAW format. */
     public static final short FORMAT_ULAW = 7;
 
     private short mFormat;
@@ -72,13 +66,12 @@ public class WaveFormat {
 
     /**
      * Construct a WaveFormat, with fields initialized.
-     *
-     * @param format        format of audio data,
-     *                      one of {@link #FORMAT_PCM}, {@link #FORMAT_ULAW}, or {@link #FORMAT_ALAW}.
-     * @param numChannels   1 for mono, 2 for stereo.
-     * @param sampleRate    typically 8000, 11025, 16000, 22050, or 44100 hz.
+     * @param format format of audio data,
+     * one of {@link #FORMAT_PCM}, {@link #FORMAT_ULAW}, or {@link #FORMAT_ALAW}. 
+     * @param numChannels 1 for mono, 2 for stereo.
+     * @param sampleRate typically 8000, 11025, 16000, 22050, or 44100 hz.
      * @param bitsPerSample usually 16 for PCM, 8 for ULAW or 8 for ALAW.
-     * @param numBytes      size of audio data after this header, in bytes.
+     * @param numBytes size of audio data after this header, in bytes.
      */
     public WaveFormat(short format, short numChannels, int sampleRate, short bitsPerSample, int numBytes) {
         mFormat = format;
@@ -90,7 +83,6 @@ public class WaveFormat {
 
     /**
      * Get the format field.
-     *
      * @return format field,
      * one of {@link #FORMAT_PCM}, {@link #FORMAT_ULAW}, or {@link #FORMAT_ALAW}.
      */
@@ -100,8 +92,8 @@ public class WaveFormat {
 
     /**
      * Set the format field.
-     *
-     * @param format one of {@link #FORMAT_PCM}, {@link #FORMAT_ULAW}, or {@link #FORMAT_ALAW}.
+     * @param format
+     * one of {@link #FORMAT_PCM}, {@link #FORMAT_ULAW}, or {@link #FORMAT_ALAW}.
      * @return reference to this WaveFormat instance.
      */
     public WaveFormat setFormat(short format) {
@@ -111,7 +103,6 @@ public class WaveFormat {
 
     /**
      * Get the number of channels.
-     *
      * @return number of channels, 1 for mono, 2 for stereo.
      */
     public short getNumChannels() {
@@ -120,7 +111,6 @@ public class WaveFormat {
 
     /**
      * Set the number of channels.
-     *
      * @param numChannels 1 for mono, 2 for stereo.
      * @return reference to this WaveFormat instance.
      */
@@ -131,7 +121,6 @@ public class WaveFormat {
 
     /**
      * Get the sample rate.
-     *
      * @return sample rate, typically 8000, 11025, 16000, 22050, or 44100 hz.
      */
     public int getSampleRate() {
@@ -140,7 +129,6 @@ public class WaveFormat {
 
     /**
      * Set the sample rate.
-     *
      * @param sampleRate sample rate, typically 8000, 11025, 16000, 22050, or 44100 hz.
      * @return reference to this WaveFormat instance.
      */
@@ -151,7 +139,6 @@ public class WaveFormat {
 
     /**
      * Get the number of bits per sample.
-     *
      * @return number of bits per sample,
      * usually 16 for PCM, 8 for ULAW or 8 for ALAW.
      */
@@ -161,9 +148,8 @@ public class WaveFormat {
 
     /**
      * Set the number of bits per sample.
-     *
      * @param bitsPerSample number of bits per sample,
-     *                      usually 16 for PCM, 8 for ULAW or 8 for ALAW.
+     * usually 16 for PCM, 8 for ULAW or 8 for ALAW.
      * @return reference to this WaveFormat instance.
      */
     public WaveFormat setBitsPerSample(short bitsPerSample) {
@@ -173,7 +159,6 @@ public class WaveFormat {
 
     /**
      * Get the size of audio data after this header, in bytes.
-     *
      * @return size of audio data after this header, in bytes.
      */
     public int getNumBytes() {
@@ -182,7 +167,6 @@ public class WaveFormat {
 
     /**
      * Set the size of audio data after this header, in bytes.
-     *
      * @param numBytes size of audio data after this header, in bytes.
      * @return reference to this WaveFormat instance.
      */
@@ -193,7 +177,6 @@ public class WaveFormat {
 
     /**
      * Read and initialize a WaveFormat.
-     *
      * @param in {@link java.io.InputStream} to read from.
      * @return number of bytes consumed.
      * @throws IOException
@@ -203,7 +186,7 @@ public class WaveFormat {
         readId(in, "RIFF");
         int numBytes = readInt(in) - 36;
         readId(in, "WAVE");
-
+ 
         /* fmt chunk */
         readId(in, "fmt ");
         if (16 != readInt(in)) throw new IOException("fmt chunk length not 16");
@@ -219,7 +202,7 @@ public class WaveFormat {
         if (blockAlign != mNumChannels * mBitsPerSample / 8) {
             throw new IOException("fmt.BlockAlign field inconsistent");
         }
-
+ 
         /* data chunk */
         readId(in, "data");
         mNumBytes = readInt(in);
@@ -229,7 +212,7 @@ public class WaveFormat {
 
     private static void readId(InputStream in, String id) throws IOException {
         for (int i = 0; i < id.length(); i++) {
-            if (id.charAt(i) != in.read()) throw new IOException(id + " tag not present");
+            if (id.charAt(i) != in.read()) throw new IOException( id + " tag not present");
         }
     }
 
@@ -238,12 +221,11 @@ public class WaveFormat {
     }
 
     private static short readShort(InputStream in) throws IOException {
-        return (short) (in.read() | (in.read() << 8));
+        return (short)(in.read() | (in.read() << 8));
     }
 
     /**
      * Write a WAVE file header.
-     *
      * @param out {@link java.io.OutputStream} to receive the header.
      * @return number of bytes written.
      * @throws IOException
@@ -253,7 +235,7 @@ public class WaveFormat {
         writeId(out, "RIFF");
         writeInt(out, 36 + mNumBytes);
         writeId(out, "WAVE");
-
+ 
         /* fmt chunk */
         writeId(out, "fmt ");
         writeInt(out, 16);
@@ -261,9 +243,9 @@ public class WaveFormat {
         writeShort(out, mNumChannels);
         writeInt(out, mSampleRate);
         writeInt(out, mNumChannels * mSampleRate * mBitsPerSample / 8);
-        writeShort(out, (short) (mNumChannels * mBitsPerSample / 8));
+        writeShort(out, (short)(mNumChannels * mBitsPerSample / 8));
         writeShort(out, mBitsPerSample);
-
+ 
         /* data chunk */
         writeId(out, "data");
         writeInt(out, mNumBytes);
@@ -289,7 +271,7 @@ public class WaveFormat {
 
     @Override
     public String toString() {
-        return String.format(Locale.getDefault(),
+        return String.format(
                 "WaveFormat format=%d numChannels=%d sampleRate=%d bitsPerSample=%d numBytes=%d",
                 mFormat, mNumChannels, mSampleRate, mBitsPerSample, mNumBytes);
     }
