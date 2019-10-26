@@ -23,6 +23,7 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN_OR_SPLIT
 
 import static android.provider.Settings.Secure.AMBIENT_RECOGNITION;
 import static android.provider.Settings.Secure.AMBIENT_RECOGNITION_KEYGUARD;
+import static android.provider.Settings.Secure.AMBIENT_RECOGNITION_INTERVAL;
 
 import static com.android.systemui.keyguard.WakefulnessLifecycle.WAKEFULNESS_ASLEEP;
 import static com.android.systemui.keyguard.WakefulnessLifecycle.WAKEFULNESS_AWAKE;
@@ -103,8 +104,6 @@ import android.media.MediaMetadata;
 import android.media.session.MediaController;
 import android.metrics.LogMaker;
 import android.net.Uri;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -797,21 +796,10 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
     private AmbientIndicationNotification mAmbientNotification;
     private RecoginitionObserverFactory mRecognition;
     private boolean mRecognitionEnabled;
-
-    /* Interval indicating when AP-Recogntion will run, that is 2 minutes and 30 seconds */
-    private static final int AP_DURATION = 150000;
-    /* Interval indicating the max recording time. Default is 10 seconds */
-    private static final int AMBIENT_RECOGNITION_INTERVAL_MAX = 10000;
-    // Interval to clean the view after song is detected. (Default 3 minutes)
-    //This is needed as all / most of the work is now done in Worker thread.
-    private static final int AMBIENT_VIEW_CLEAR_INTERVAL = 180000;
-    private Handler ambientClearingHandler;
-    private Runnable ambientClearingRunnable;
-    private static final String AMBIENT_PLAY_INTENT = "ambient_play_alarm_intent";
-    private static final IntentFilter AP_INTENT_FILTER = new IntentFilter(AMBIENT_PLAY_INTENT);
-    private static final Intent AP_INTENT = new Intent(AMBIENT_PLAY_INTENT);
-    private static final int AP_REQUEST_CODE = 6969;
-    private AlarmManager alarmManager;
+    /* Interval indicating when AP-Recogntion will run. Default is 2 minutes */
+    private int mAmbientRecognitionInterval = 120000;
+    /* Interval indicating the max recording time. Default is 19 seconds */
+    private static final int AMBIENT_RECOGNITION_INTERVAL_MAX = 19000;
 
     private int mAlbumArtFilter;
 
@@ -927,8 +915,7 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         mContext.registerReceiver(mWallpaperChangedReceiver, wallpaperChangedFilter);
         mWallpaperChangedReceiver.onReceive(mContext, null);
 
-        mLockscreenUserManager.setUpWithPresenter(this, mEntryManager);
-        mContext.registerReceiver(ambientReceiver, AP_INTENT_FILTER);
+        mLockscreenUserManager.setUpWithPresenter(this, mEntryManager);        
         mCustomSettingsObserver.observe();
         mCustomSettingsObserver.update();
         mAmbientSettingsObserver.observe();
@@ -1181,16 +1168,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
             ((AmbientIndicationContainer) mAmbientIndicationContainer).initializeView(this);
         }
 
-        // Initialize handler and runnable
-        ambientClearingHandler = new Handler();
-        ambientClearingRunnable = new Runnable(){
-            @Override
-            public void run() {
-                mAmbientIndicationContainer.setVisibility(View.INVISIBLE);
-                ((AmbientIndicationContainer) mAmbientIndicationContainer).hideIndication();
-            }
-        };
-
         // set the initial view visibility
         setAreThereNotifications();
 
@@ -1358,16 +1335,7 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                 public void run() {
                     ((AmbientIndicationContainer) mAmbientIndicationContainer)
                                 .setIndication(observed.Song, observed.Artist);
-                    mAmbientIndicationContainer.setVisibility(View.VISIBLE);
                     mAmbientNotification.show(observed.Song, observed.Artist);
-
-                    try {
-                        ambientClearingHandler.removeCallbacks(ambientClearingRunnable);
-                        ambientClearingHandler.postDelayed(ambientClearingRunnable, AMBIENT_VIEW_CLEAR_INTERVAL);
-                    } catch (Exception e) {
-                        // This too shall pass
-                    }
-
                     // If the song matches then wait for 2 minutes at least before you start again.
                     // We don't have to give results right away, as this is an Ambient feature.
                     doStopAmbientRecognition(true);
@@ -1380,12 +1348,7 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        ambientClearingHandler.removeCallbacks(ambientClearingRunnable);
-                        ambientClearingHandler.postDelayed(ambientClearingRunnable, 0);
-                    } catch (Exception e) {
-                        // This too shall pass
-                    }
+                    ((AmbientIndicationContainer) mAmbientIndicationContainer).hideIndication();
                     doStopAmbientRecognition(false);
                 }
             });
@@ -1396,12 +1359,7 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        ambientClearingHandler.removeCallbacks(ambientClearingRunnable);
-                        ambientClearingHandler.postDelayed(ambientClearingRunnable, 0);
-                    } catch (Exception e) {
-                        // This too shall pass
-                    }
+                    ((AmbientIndicationContainer) mAmbientIndicationContainer).hideIndication();
                     doStopAmbientRecognition(false);
                 }
             });
@@ -3670,15 +3628,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         pw.println(BarTransitions.modeToString(transitions.getMode()));
     }
 
-    private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager
-              = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-
-        // NetworkInfo object will return null in case device is in flight mode.
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-    }
-
     public void createAndAddWindows() {
         addStatusBarWindow();
     }
@@ -3899,28 +3848,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                     updateMediaMetaData(true, true);
                 }
             }
-        }
-    };
-
-    private final BroadcastReceiver ambientReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            new Thread() {
-                @Override
-                public void run() {
-                    android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-                    Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-                    try {
-                        doAmbientRecognition();
-                        Thread.currentThread().sleep(AMBIENT_RECOGNITION_INTERVAL_MAX);
-                        // Stop recording, process audio and post result.
-                        doStopAmbientRecognition(false);
-                    } catch (InterruptedException e) {
-                    }
-                }
-            }.start();
-            // Schedule it for the next time.
-            scheduleAmbientPlayAlarm();
         }
     };
 
@@ -4233,7 +4160,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
     public void destroy() {
         // Begin old BaseStatusBar.destroy().
         mContext.unregisterReceiver(mBannerActionBroadcastReceiver);
-        mContext.unregisterReceiver(ambientReceiver);
         mLockscreenUserManager.destroy();
         try {
             mNotificationListener.unregisterAsSystemService();
@@ -4727,28 +4653,36 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
     private void initAmbientRecognition() {
         mRecognitionEnabled = Settings.Secure.getInt(mContext.getContentResolver(),
                 AMBIENT_RECOGNITION, 0) != 0;
+        if (!mRecognitionEnabled) return;
+        mAmbientRecognitionInterval = Settings.Secure.getInt(mContext.getContentResolver(),
+                AMBIENT_RECOGNITION_INTERVAL, 120000);
+        doAmbientRecognition(false);
     }
     private void doAmbientRecognition() {
-        // Only start recording audio if we have internet connectivity.
-        if (isNetworkAvailable()) {
-            mRecognition = new RecoginitionObserverFactory(mContext);
-            mRecognition.startRecording();
+        mRecognition = new RecoginitionObserverFactory(mContext);
+        mRecognition.startRecording();
+        mHandler.postDelayed(() -> {
+                 doStopAmbientRecognition(false);
+        }, AMBIENT_RECOGNITION_INTERVAL_MAX);
     }
     private void doStopAmbientRecognition(boolean isSongMatched) {
         // If mRecognition is not initialized this means we have not started the recording, thus using stopRecording() will give NPE.
         // So, just let's go directly in handler, doAmbientRecognition() will do the work for us.
         if (mRecognition != null)
             mRecognition.stopRecording();
-        // Set this null so that GC can clear this up, as we are initiating this object again in doAmbientRecognition()
-        mRecognition = null;
-    }
-    private void scheduleAmbientPlayAlarm() {
-        // Check user's pref
+        // Check if user has disabled "Now Playing" feature
         if (!mRecognitionEnabled) return;
-
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(mContext, AP_REQUEST_CODE, AP_INTENT, 0);
-        alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + (AP_DURATION), pendingIntent);
+        if (isSongMatched) {
+            Log.d(TAG, "Will start listening again in 2 mins.");
+            mHandler.postDelayed(() -> {
+                    doAmbientRecognition();
+            }, 120000);
+        } else {
+            Log.d(TAG, "Will start listening again in " + mAmbientRecognitionInterval + " seconds.");
+            mHandler.postDelayed(() -> {
+                    doAmbientRecognition();
+            }, mAmbientRecognitionInterval);
+        }
     }
 
     /**
@@ -6566,6 +6500,9 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
             resolver.registerContentObserver(Settings.Secure.getUriFor(
                     Settings.Secure.AMBIENT_RECOGNITION_KEYGUARD),
                     false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.Secure.getUriFor(
+                    Settings.Secure.AMBIENT_RECOGNITION_INTERVAL),
+                    false, this, UserHandle.USER_ALL);
         }
         @Override
         public void onChange(boolean selfChange, Uri uri) {
@@ -6574,7 +6511,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         public void update() {
             initAmbientRecognition();
             updateAmbientIndicationForKeyguard();
-            scheduleAmbientPlayAlarm();
         }
     }
 
