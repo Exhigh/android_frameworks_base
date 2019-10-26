@@ -53,7 +53,7 @@ public class AmbientIndicationContainer extends AutoReinflateContainer {
             mAmbientIndication.setVisibility(View.VISIBLE);
             mAmbientIndication.setClickable(false);
             mText.setText(String.format(mContext.getResources().getString(
-                    com.android.internal.R.string.ambient_recognition_information), mSong, mArtist));
+                    R.string.ambient_recognition_information), mSong, mArtist));
         }
     }
 

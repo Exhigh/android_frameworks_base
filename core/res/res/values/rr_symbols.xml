@@ -27,10 +27,6 @@
     <!-- In call notification vibration strength -->
     <java-symbol type="integer" name="config_in_call_notification_vibration_strength" />
 
-    <!-- Ambient play -->
-    <java-symbol type="string" name="ambient_recognition_notification" />
-    <java-symbol type="string" name="ambient_recognition_information" />
-
     <!-- Usb drive persistent notification -->
     <java-symbol type="bool" name="config_persistUsbDriveNotification" />
 
@@ -178,4 +174,5 @@
    <java-symbol type="id" name="notification_media_progress_time" />
    <java-symbol type="id" name="notification_media_elapsed_time" />
    <java-symbol type="id" name="notification_media_total_time" />
+
 </resources>
