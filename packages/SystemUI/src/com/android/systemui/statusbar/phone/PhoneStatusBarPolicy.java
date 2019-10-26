@@ -484,9 +484,9 @@ public class PhoneStatusBarPolicy implements Callback, Callbacks,
         boolean bluetoothVisible = false;
         if (mBluetooth != null) {
             if (mBluetooth.isBluetoothConnected()) {
-
-                int batteryLevel = mBluetooth.getConnectedDevices().get(0).getBatteryLevel();
-
+                List<CachedBluetoothDevice> connectedDevices = mBluetooth.getConnectedDevices();
+                int batteryLevel = connectedDevices.isEmpty() ?
+                        -1 : connectedDevices.get(0).getBatteryLevel();
                 if (batteryLevel == 100) {
                     iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_9;
                 } else if (batteryLevel >= 90) {
@@ -898,11 +898,9 @@ public class PhoneStatusBarPolicy implements Callback, Callbacks,
                 case BluetoothDevice.ACTION_BATTERY_LEVEL_CHANGED:
                     updateBluetooth();
                     break;
-
                 case NfcAdapter.ACTION_ADAPTER_STATE_CHANGED:
                     updateNfc();
                     break;
-
 
             }
         }
