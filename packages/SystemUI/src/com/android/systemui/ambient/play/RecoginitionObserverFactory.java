@@ -36,7 +36,6 @@ import java.util.regex.Pattern;
 public class RecoginitionObserverFactory extends RecoginitionObserver {
 
     private RecorderThread mRecThread;
-    boolean isRecording = false;
 
     public RecoginitionObserverFactory(Context context) {
         super(context);
@@ -46,19 +45,20 @@ public class RecoginitionObserverFactory extends RecoginitionObserver {
      * Helper thread class to record the data to send
      */
     private class RecorderThread extends Thread {
+        private boolean mDataSending = false;
         private boolean mResultGiven = false;
-        private byte[] buffCopy = new byte[SAMPLE_RATE * 10 * 2];
+        private long mLastMatchTryTime;
 
         public void run() {
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
-            Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
             Log.d(TAG, "Started reading recorder...");
+            mLastMatchTryTime = SystemClock.uptimeMillis();
 
-            while (isRecording && mBuffer != null) {
+            while (!isInterrupted() && mBuffer != null && mBufferIndex < mBuffer.length) {
                 int read = 0;
                 synchronized (this) {
                     if (mRecorder != null) {
-                        read = mRecorder.read(mBuffer, 0, mBuffer.length);
+                        read = mRecorder.read(mBuffer, mBufferIndex, Math.min(512, mBuffer.length - mBufferIndex));
                         if (read == AudioRecord.ERROR_BAD_VALUE) {
                             Log.d(TAG, "BAD_VALUE while reading recorder");
                             break;
@@ -66,21 +66,22 @@ public class RecoginitionObserverFactory extends RecoginitionObserver {
                             Log.d(TAG, "INVALID_OPERATION while reading recorder");
                             break;
                         } else if (read >= 0) {
-                            // Copy recording to a new array before StopRecording is called, because we are clearing the mBuffer there.
-                            System.arraycopy(mBuffer, 0, buffCopy, 0, buffCopy.length);
+                            mBufferIndex += read;
                         }
                     }
                 }
 
-                // if (read >= 0) {
-                //     if (mBufferIndex > 10) {
-                //         mManager.dispatchRecognitionAudio((float) computeAverageAmplitude(mBuffer, mBufferIndex - 10, 4));
-                //     }
-                //     tryMatchCurrentBuffer();
-                // }
+                if (read >= 0) {
+                    if (mBufferIndex > 10) {
+                        mManager.dispatchRecognitionAudio((float) computeAverageAmplitude(mBuffer, mBufferIndex - 10, 4));
+                    }
+                    long currentTime = SystemClock.uptimeMillis();
+                    if (currentTime - mLastMatchTryTime >= MATCH_INTERVAL) {
+                        tryMatchCurrentBuffer();
+                        mLastMatchTryTime = SystemClock.uptimeMillis();
+                    }
+                }
             }
-
-            tryMatchCurrentBuffer();
 
             Log.d(TAG, "Broke out of recording loop, mResultGiven=" + mResultGiven);
         }
@@ -104,17 +105,34 @@ public class RecoginitionObserverFactory extends RecoginitionObserver {
 
         public void tryMatchCurrentBuffer() {
             if (!mRecognitionEnabled) return;
-            if (!isRecording) {
+            if (mBufferIndex > 0) {
                 new Thread() {
                     public void run() {
                         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
-                        Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
                         // Allow only one upload call at a time
-                        String output_xml = sendAudioData(buffCopy, buffCopy.length);
+                        if (mDataSending) {
+                            //Log.d(TAG, "Not sending, data already sending");
+                            return;
+                        }
+
+                        mDataSending = true;
+
+                        byte[] copy;
+                        int length;
+                        synchronized (RecorderThread.this) {
+                            length = mBufferIndex;
+                        }
+
+                        copy = new byte[length];
+                        System.arraycopy(mBuffer, 0, copy, 0, length);
+
+                        String output_xml = sendAudioData(copy, length);
                         parseXmlResult(output_xml);
+                        mDataSending = false;
                     }
                 }.start();
             } else {
+                stopRecording();
                 Log.e(TAG, "0 bytes recorded!?");
             }
         }
@@ -148,6 +166,8 @@ public class RecoginitionObserverFactory extends RecoginitionObserver {
                 return sb.toString();
             } catch (IOException e) {
                 Log.d(TAG, "Error while sending audio data", e);
+                mDataSending = false;
+                stopRecording();
             }
 
             return "";
@@ -172,9 +192,11 @@ public class RecoginitionObserverFactory extends RecoginitionObserver {
                     observed.Song = match.group(3);
                     observed.ArtworkUrl = match.group(4);
                     Log.d(TAG, "Got a match! " + observed);
+                    stopRecording();
                 } else {
                     Log.d(TAG, "Regular expression didn't match!");
                     reportResult(null);
+                    stopRecording();
                 }
                 reportResult(observed);
             }
@@ -185,10 +207,14 @@ public class RecoginitionObserverFactory extends RecoginitionObserver {
             // report the result.
             if (mRecorder == null && observed == null) {
                 Log.d(TAG, "Reporting onNoMatch");
+                stopRecording();
                 mManager.dispatchRecognitionNoResult();
             } else if (observed != null) {
                 Log.d(TAG, "Reporting result");
                 mResultGiven = true;
+                if (mRecorder != null) {
+                    stopRecording();
+                }
                 mManager.dispatchRecognitionResult(observed);
             }
         }
@@ -202,12 +228,8 @@ public class RecoginitionObserverFactory extends RecoginitionObserver {
         mBufferIndex = 0;
         if (!mRecognitionEnabled) return;
         try {
-            // Make sure buffer is cleared before recording starts.
-            int bufferSize = SAMPLE_RATE * 11 * 2;
-            mBuffer = new byte[bufferSize];
-            mRecThread = new RecorderThread();
             mRecorder.startRecording();
-            isRecording = true;
+            mRecThread = new RecorderThread();
             mRecThread.start();
         } catch (IllegalStateException e) {
             Log.d(TAG, "Cannot start recording for recognition", e);
@@ -220,19 +242,18 @@ public class RecoginitionObserverFactory extends RecoginitionObserver {
      * pending data, if any, will be sent to the API to get a match.
      */
     public void stopRecording() {
-        if (mRecorder != null && mRecorder.getState() == AudioRecord.STATE_INITIALIZED && mRecThread != null && mRecThread.isAlive()) {
-            try {
-                Log.d(TAG, "Stopping recorder");
-                isRecording = false;
-                mRecorder.stop();
+        if (mRecThread != null && mRecThread.isAlive()) {
+            Log.d(TAG, "Interrupting recorder thread");
+            mRecThread.interrupt();
+        }
 
-                // Don't forget to release the native resources.
-                mRecorder.release();
-                mRecorder = null;
-                mRecThread = null;
-            } catch (Exception e) {
-                Log.e(TAG, "Exception occured ", e);
-            }
+        if (mRecorder != null && mRecorder.getState() == AudioRecord.STATE_INITIALIZED) {
+            Log.d(TAG, "Stopping recorder");
+            mRecorder.stop();
+
+            // Don't forget to release the native resources.
+            mRecorder.release();
+            mRecorder = null;
         }
     }
 }
