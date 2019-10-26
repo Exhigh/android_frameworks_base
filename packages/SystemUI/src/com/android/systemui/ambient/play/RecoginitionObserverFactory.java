@@ -245,7 +245,7 @@ public class RecoginitionObserverFactory extends RecoginitionObserver {
             mRecThread.interrupt();
         }
 
-        if (mRecorder != null && mRecorder.getState() == AudioRecord.STATE_INITIALIZED) {
+        if (mRecorder != null) {
             Log.d(TAG, "Stopping recorder");
             mRecorder.stop();
             mRecorder = null;
