@@ -41,9 +41,6 @@ import static com.android.systemui.statusbar.phone.BarTransitions.MODE_TRANSLUCE
 import static com.android.systemui.statusbar.phone.BarTransitions.MODE_TRANSPARENT;
 import static com.android.systemui.statusbar.phone.BarTransitions.MODE_WARNING;
 
-import android.content.ContentResolver;
-import android.database.ContentObserver;
-import android.os.Process;
 import android.ambient.AmbientIndicationManager;
 import android.ambient.AmbientIndicationManagerCallback;
 import android.ambient.play.RecoginitionObserver.Observable;
@@ -107,12 +104,9 @@ import android.media.session.MediaController;
 import android.metrics.LogMaker;
 import android.net.Uri;
 import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.BatteryManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -818,8 +812,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
     private static final Intent AP_INTENT = new Intent(AMBIENT_PLAY_INTENT);
     private static final int AP_REQUEST_CODE = 6969;
     private AlarmManager alarmManager;
-    private BatteryManager mBatteryManager;
-    private static int NO_MATCH_COUNT = 0;
 
     private int mAlbumArtFilter;
 
@@ -895,8 +887,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                 mContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
 
         mPowerManager = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
-
-        mBatteryManager = (BatteryManager) mContext.getSystemService(Context.BATTERY_SERVICE);
 
         mDeviceProvisionedController = Dependency.get(DeviceProvisionedController.class);
 
@@ -1371,9 +1361,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                     mAmbientIndicationContainer.setVisibility(View.VISIBLE);
                     mAmbientNotification.show(observed.Song, observed.Artist);
 
-                    if (NO_MATCH_COUNT != 0)
-                        NO_MATCH_COUNT = 0;
-
                     try {
                         ambientClearingHandler.removeCallbacks(ambientClearingRunnable);
                         ambientClearingHandler.postDelayed(ambientClearingRunnable, AMBIENT_VIEW_CLEAR_INTERVAL);
@@ -1381,7 +1368,9 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                         // This too shall pass
                     }
 
-                    doStopAmbientRecognition();
+                    // If the song matches then wait for 2 minutes at least before you start again.
+                    // We don't have to give results right away, as this is an Ambient feature.
+                    doStopAmbientRecognition(true);
                 }
             });
         }
@@ -1397,10 +1386,7 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                     } catch (Exception e) {
                         // This too shall pass
                     }
-
-                    if (!mBatteryManager.isCharging())
-                        NO_MATCH_COUNT++;
-                    doStopAmbientRecognition();
+                    doStopAmbientRecognition(false);
                 }
             });
         }
@@ -1416,11 +1402,7 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                     } catch (Exception e) {
                         // This too shall pass
                     }
-
-
-                    if (!mBatteryManager.isCharging())
-                        NO_MATCH_COUNT++;
-                    doStopAmbientRecognition();
+                    doStopAmbientRecognition(false);
                 }
             });
         }
@@ -3688,32 +3670,13 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         pw.println(BarTransitions.modeToString(transitions.getMode()));
     }
 
-    private int isNetworkAvailable() {
-        final ConnectivityManager connectivityManager
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
               = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-        final NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        final Network network = connectivityManager.getActiveNetwork();
-        final NetworkCapabilities capabilities = connectivityManager
-            .getNetworkCapabilities(network);
-        /**
-         * Return -1 if We don't have any network connectivity
-         * Return 0 if we are on WiFi  (desired)
-         * Return 1 if we are on MobileData (Little less desired)
-         * Return 2 if not sure which connection is user on but has network connectivity 
-         */
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
 
         // NetworkInfo object will return null in case device is in flight mode.
-        if (activeNetworkInfo == null)
-            return -1;
-        else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI))
-            return 0;
-        else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
-            return 1;
-        else if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) 
-            && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
-            return 2;
-        else
-            return -1;
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
     public void createAndAddWindows() {
@@ -3942,26 +3905,22 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
     private final BroadcastReceiver ambientReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            final int whichNetwork = isNetworkAvailable();
-            // Only start recording audio if we have internet connectivity.
-
-            if (whichNetwork != -1) {
-                new Thread() {
-                    @Override
-                    public void run() {
-                        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-                        try {
-                            doAmbientRecognition();
-                            Thread.currentThread().sleep(AMBIENT_RECOGNITION_INTERVAL_MAX);
-                            // Stop recording, process audio and post result.
-                            doStopAmbientRecognition();
-                        } catch (InterruptedException e) {
-                        }
+            new Thread() {
+                @Override
+                public void run() {
+                    android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+                    Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+                    try {
+                        doAmbientRecognition();
+                        Thread.currentThread().sleep(AMBIENT_RECOGNITION_INTERVAL_MAX);
+                        // Stop recording, process audio and post result.
+                        doStopAmbientRecognition(false);
+                    } catch (InterruptedException e) {
                     }
-                }.start();
-	    }
+                }
+            }.start();
             // Schedule it for the next time.
-            scheduleAmbientPlayAlarm(whichNetwork);
+            scheduleAmbientPlayAlarm();
         }
     };
 
@@ -4770,10 +4729,12 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                 AMBIENT_RECOGNITION, 0) != 0;
     }
     private void doAmbientRecognition() {
-        mRecognition = new RecoginitionObserverFactory(mContext);
-        mRecognition.startRecording();
+        // Only start recording audio if we have internet connectivity.
+        if (isNetworkAvailable()) {
+            mRecognition = new RecoginitionObserverFactory(mContext);
+            mRecognition.startRecording();
     }
-    private void doStopAmbientRecognition() {
+    private void doStopAmbientRecognition(boolean isSongMatched) {
         // If mRecognition is not initialized this means we have not started the recording, thus using stopRecording() will give NPE.
         // So, just let's go directly in handler, doAmbientRecognition() will do the work for us.
         if (mRecognition != null)
@@ -4781,33 +4742,13 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         // Set this null so that GC can clear this up, as we are initiating this object again in doAmbientRecognition()
         mRecognition = null;
     }
-    private void scheduleAmbientPlayAlarm(int networkType) {
+    private void scheduleAmbientPlayAlarm() {
         // Check user's pref
         if (!mRecognitionEnabled) return;
 
-        int duration = 150000;
-        /**
-         * Let's try to reduce battery consumption here.
-         *  - If device is charging then let's not worry about scan interval and let's scan every 2 minutes, else
-         *  - If device is not able to find matches for 20 consecutive times.
-         *    then chances are that user is probably not listening to music or maybe sleeping
-         *    So, Bump the scan interval to 5 minutes, else
-         *  - If device is on WiFi then let scan duration be 2 minutes and 30 seconds, or
-         *  - If device is on Mobile Data or anything else then let's set it to 3 minutes.
-         */
-
-        if (mBatteryManager.isCharging())
-            duration = 120000;
-        else if (NO_MATCH_COUNT >= 20)
-            duration = 300000;
-        else if (networkType == 0)
-            duration = 150000;
-        else if (networkType == 1 || networkType == 2)
-            duration = 180000;
-
         PendingIntent pendingIntent = PendingIntent.getBroadcast(mContext, AP_REQUEST_CODE, AP_INTENT, 0);
         alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + duration, pendingIntent);
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + (AP_DURATION), pendingIntent);
     }
 
     /**
@@ -6633,7 +6574,7 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         public void update() {
             initAmbientRecognition();
             updateAmbientIndicationForKeyguard();
-            scheduleAmbientPlayAlarm(isNetworkAvailable());
+            scheduleAmbientPlayAlarm();
         }
     }
 
