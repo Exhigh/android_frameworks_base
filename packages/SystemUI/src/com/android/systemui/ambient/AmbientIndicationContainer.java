@@ -77,8 +77,6 @@ public class AmbientIndicationContainer extends AutoReinflateContainer implement
         if (recognitionKeyguard == 1) {
             if (mSong != null && mArtist != null) {
                 mAmbientIndication.setVisibility(View.VISIBLE);
-            } else {
-                mAmbientIndication.setVisibility(View.INVISIBLE);
             }
             return;
         }
