@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import android.annotation.WorkerThread;
-
 /**
  * This class represents the header of a WAVE format audio file, which usually
  * have a .wav suffix.  The following integer valued fields are contained:
@@ -36,7 +34,6 @@ import android.annotation.WorkerThread;
  * Not yet ready to be supported, so
  * @hide
  */
-@WorkerThread
 public class WaveFormat {
 
     // follows WAVE format in http://ccrma.stanford.edu/courses/422/projects/WaveFormat
