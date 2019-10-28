@@ -6497,6 +6497,9 @@ message MetricsEvent {
     // OS: Q
     ACTION_EMERGENCY_DIALER_FROM_POWER_MENU = 1569;
 
+    // Location Tile
+    TILE_LOCATION_DETAIL = 1600;
+
     // ---- End Q Constants, all Q constants go above this line ----
 
     // Add new aosp constants above this line.

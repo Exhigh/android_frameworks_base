@@ -498,8 +498,9 @@ public class NotificationEntryManager implements Dumpable, NotificationInflater.
         entry.row.setLowPriorityStateUpdated(false);
 
         if (mEntryToRefresh == entry && mMediaManager.isMediaNotification(entry)) {
-
-            final int[] colors = {n.backgroundColor, n.foregroundColor, n.primaryTextColor, n.secondaryTextColor};
+             final Notification n = entry.notification.getNotification();
+             final int[] colors = {n.backgroundColor, n.foregroundColor,
+                    n.primaryTextColor, n.secondaryTextColor};
             mMediaManager.setPulseColors(n.isColorizedMedia(), colors);
 
             String notificationText = null;
