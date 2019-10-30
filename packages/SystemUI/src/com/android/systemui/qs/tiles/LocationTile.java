@@ -233,7 +233,7 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 
         @Override
         public int getMetricsCategory() {
-            return MetricsProto.MetricsEvent.OWLSNEST;
+            return MetricsProto.MetricsEvent.RESURRECTED;
         }
 
         @Override
