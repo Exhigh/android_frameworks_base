@@ -74,6 +74,11 @@ public class LocationTile extends QSTileImpl<BooleanState> {
     }
 
     @Override
+    public boolean isDualTarget() {
+        return true;
+    }
+
+    @Override
     public DetailAdapter getDetailAdapter() {
         return mDetailAdapter;
     }
@@ -159,7 +164,7 @@ public class LocationTile extends QSTileImpl<BooleanState> {
             case Settings.Secure.LOCATION_MODE_HIGH_ACCURACY:
                 state.contentDescription = mContext.getString(
                         R.string.accessibility_quick_settings_location_high_accuracy);
-                state.icon = mIcon;
+               state.icon = ResourceIcon.get(R.drawable.ic_qs_location_high_accuracy);
                 break;
             case Settings.Secure.LOCATION_MODE_BATTERY_SAVING:
                 state.contentDescription = mContext.getString(
@@ -233,7 +238,7 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 
         @Override
         public int getMetricsCategory() {
-            return MetricsProto.MetricsEvent.RESURRECTED;
+            return MetricsEvent.TILE_LOCATION_DETAIL;
         }
 
         @Override
