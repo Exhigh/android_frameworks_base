@@ -885,6 +885,9 @@ public final class PowerManagerService extends SystemService
         resolver.registerContentObserver(LineageSettings.System.getUriFor(
                 LineageSettings.System.BUTTON_BACKLIGHT_ONLY_WHEN_PRESSED),
                 false, mSettingsObserver, UserHandle.USER_ALL);
+        resolver.registerContentObserver(Settings.Secure.getUriFor(
+                Settings.Secure.HARDWARE_KEYS_DISABLE),
+                false, mSettingsObserver, UserHandle.USER_ALL);
         resolver.registerContentObserver(LineageSettings.Global.getUriFor(
                 LineageSettings.Global.WAKE_WHEN_PLUGGED_OR_UNPLUGGED),
                 false, mSettingsObserver, UserHandle.USER_ALL);
@@ -1041,6 +1044,10 @@ public final class PowerManagerService extends SystemService
         mButtonLightOnKeypressOnly = LineageSettings.System.getIntForUser(resolver,
                 LineageSettings.System.BUTTON_BACKLIGHT_ONLY_WHEN_PRESSED,
                 0, UserHandle.USER_CURRENT) == 1;
+
+        mHardwareKeysDisable = Settings.Secure.getIntForUser(resolver,
+                Settings.Secure.HARDWARE_KEYS_DISABLE, 0,
+                UserHandle.USER_CURRENT) != 0;
 
         mDirty |= DIRTY_SETTINGS;
     }
@@ -2134,10 +2141,14 @@ public final class PowerManagerService extends SystemService
                         mUserActivitySummary = USER_ACTIVITY_SCREEN_BRIGHT;
                         if (mWakefulness == WAKEFULNESS_AWAKE) {
                             int buttonBrightness;
-                            if (mButtonBrightnessOverrideFromWindowManager >= 0) {
-                                buttonBrightness = mButtonBrightnessOverrideFromWindowManager;
+                            if (mHardwareKeysDisable) {
+                                buttonBrightness = 0;
                             } else {
-                                buttonBrightness = mButtonBrightness;
+                                if (mButtonBrightnessOverrideFromWindowManager >= 0) {
+                                    buttonBrightness = mButtonBrightnessOverrideFromWindowManager;
+                                } else {
+                                    buttonBrightness = mButtonBrightness;
+                                }
                             }
 
                             mLastButtonActivityTime = mButtonLightOnKeypressOnly ?
