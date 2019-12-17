@@ -26,7 +26,9 @@ import android.hardware.usb.UsbManager;
 import android.provider.Settings;
 import android.net.ConnectivityManager;
 import android.service.quicksettings.Tile;
-
+import com.android.systemui.Dependency;
+import com.android.systemui.plugins.ActivityStarter;
+import com.android.systemui.statusbar.policy.KeyguardMonitor;
 import com.android.systemui.plugins.qs.QSTile.BooleanState;
 import com.android.systemui.qs.QSHost;
 import com.android.systemui.qs.tileimpl.QSTileImpl;
@@ -48,12 +50,16 @@ public class UsbTetherTile extends QSTileImpl<BooleanState> {
 
     private boolean mListening;
 
+    private final KeyguardMonitor mKeyguard;
+    private final KeyguardCallback mKeyguardCallback = new KeyguardCallback();    
+
     private boolean mUsbConnected = false;
     private boolean mUsbTetherEnabled = false;
 
     public UsbTetherTile(QSHost host) {
         super(host);
         mConnectivityManager = mContext.getSystemService(ConnectivityManager.class);
+        mKeyguard = Dependency.get(KeyguardMonitor.class);
     }
 
     public BooleanState newTileState() {
@@ -70,14 +76,23 @@ public class UsbTetherTile extends QSTileImpl<BooleanState> {
             final IntentFilter filter = new IntentFilter();
             filter.addAction(UsbManager.ACTION_USB_STATE);
             mContext.registerReceiver(mReceiver, filter);
+            mKeyguard.addCallback(mKeyguardCallback);
         } else {
             mContext.unregisterReceiver(mReceiver);
+            mKeyguard.removeCallback(mKeyguardCallback);
         }
     }
 
     @Override
     protected void handleClick() {
         if (mUsbConnected) {
+            if (mKeyguard.isSecure() && mKeyguard.isShowing()) {
+                Dependency.get(ActivityStarter.class).postQSRunnableDismissingKeyguard(() -> {
+                    mHost.openPanels();
+                    mConnectivityManager.setUsbTethering(!mUsbTetherEnabled);
+                });
+                return;
+            }
             mConnectivityManager.setUsbTethering(!mUsbTetherEnabled);
         }
     }
@@ -118,4 +133,11 @@ public class UsbTetherTile extends QSTileImpl<BooleanState> {
     public int getMetricsCategory() {
         return LineageMetricsLogger.TILE_USB_TETHER;
     }
+    
+    private final class KeyguardCallback implements KeyguardMonitor.Callback {
+        @Override
+        public void onKeyguardShowingChanged() {
+            refreshState();
+        }
+    };
 }

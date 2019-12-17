@@ -54,6 +54,7 @@ import com.android.systemui.Prefs;
 import com.android.systemui.R;
 import com.android.systemui.SysUIToast;
 import com.android.systemui.plugins.ActivityStarter;
+import com.android.systemui.statusbar.policy.KeyguardMonitor;
 import com.android.systemui.plugins.qs.DetailAdapter;
 import com.android.systemui.plugins.qs.QSTile.BooleanState;
 import com.android.systemui.qs.QSHost;
@@ -82,11 +83,17 @@ public class DndTile extends QSTileImpl<BooleanState> {
     private final DndDetailAdapter mDetailAdapter;
 
     private boolean mListening;
+
+    private final KeyguardMonitor mKeyguard;
+    private final KeyguardCallback mKeyguardCallback = new KeyguardCallback();
+   
+
     private boolean mShowingDetail;
     private boolean mReceiverRegistered;
 
     public DndTile(QSHost host) {
         super(host);
+        mKeyguard = Dependency.get(KeyguardMonitor.class);
         mController = Dependency.get(ZenModeController.class);
         mDetailAdapter = new DndDetailAdapter();
         mContext.registerReceiver(mReceiver, new IntentFilter(ACTION_SET_VISIBLE));
@@ -139,14 +146,25 @@ public class DndTile extends QSTileImpl<BooleanState> {
         return ZEN_SETTINGS;
     }
 
-    @Override
-    protected void handleClick() {
+    private void handleClickInner() {
         // Zen is currently on
         if (mState.value) {
             mController.setZen(ZEN_MODE_OFF, null, TAG);
         } else {
             turnOnDND(SHOW_DETAILS_IF_DURATION_HAS_TO_BE_CHOSEN);
         }
+    }
+
+    @Override
+    public void handleClick() {
+        if (mKeyguard.isSecure() && mKeyguard.isShowing()) {
+            Dependency.get(ActivityStarter.class).postQSRunnableDismissingKeyguard(() -> {
+                mHost.openPanels();
+                handleClickInner();
+            });
+            return;
+        }
+        handleClickInner();
     }
 
     public void turnOnDND(int showDetails) {
@@ -305,9 +323,11 @@ public class DndTile extends QSTileImpl<BooleanState> {
         if (mListening) {
             mController.addCallback(mZenCallback);
             Prefs.registerListener(mContext, mPrefListener);
+            mKeyguard.addCallback(mKeyguardCallback);
         } else {
             mController.removeCallback(mZenCallback);
             Prefs.unregisterListener(mContext, mPrefListener);
+            mKeyguard.removeCallback(mKeyguardCallback);
         }
     }
 
@@ -481,6 +501,13 @@ public class DndTile extends QSTileImpl<BooleanState> {
         @Override
         public void onExpanded(boolean expanded) {
             // noop
+        }
+    };
+
+   private final class KeyguardCallback implements KeyguardMonitor.Callback {
+        @Override
+        public void onKeyguardShowingChanged() {
+            refreshState();
         }
     };
 

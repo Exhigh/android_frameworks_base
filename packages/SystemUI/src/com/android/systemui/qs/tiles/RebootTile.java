@@ -19,8 +19,10 @@ package com.android.systemui.qs.tiles;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
+import com.android.systemui.Dependency;
 import android.os.PowerManager;
-
+import com.android.systemui.plugins.ActivityStarter;
+import com.android.systemui.statusbar.policy.KeyguardMonitor;
 import com.android.internal.logging.MetricsLogger;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.systemui.R;
@@ -32,8 +34,13 @@ public class RebootTile extends QSTileImpl<BooleanState> {
 
     private boolean mRebootToRecovery = false;
 
+    private boolean mListening;
+    private final KeyguardMonitor mKeyguard;
+    private final KeyguardCallback mKeyguardCallback = new KeyguardCallback();
+    
     public RebootTile(QSHost host) {
         super(host);
+        mKeyguard = Dependency.get(KeyguardMonitor.class);
     }
 
     @Override
@@ -47,8 +54,7 @@ public class RebootTile extends QSTileImpl<BooleanState> {
         refreshState();
     }
 
-    @Override
-    protected void handleLongClick() {
+    private void handleLongClickInner() {
         mHost.collapsePanels();
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
@@ -61,6 +67,18 @@ public class RebootTile extends QSTileImpl<BooleanState> {
                     pm.reboot("");
             }
         }, 500);
+    }
+
+    @Override
+    protected void handleLongClick() {
+        if (mKeyguard.isSecure() && mKeyguard.isShowing()) {
+            Dependency.get(ActivityStarter.class).postQSRunnableDismissingKeyguard(() -> {
+                mHost.openPanels();
+                handleLongClickInner();
+            });
+            return;
+        }
+        handleLongClickInner();
     }
 
     @Override
@@ -91,5 +109,19 @@ public class RebootTile extends QSTileImpl<BooleanState> {
 
     @Override
     public void handleSetListening(boolean listening) {
+         if (mListening == listening) return;
+         mListening = listening;
+         if (listening) {
+            mKeyguard.addCallback(mKeyguardCallback);
+        } else {
+            mKeyguard.removeCallback(mKeyguardCallback);
+        }
     }
+   
+    private final class KeyguardCallback implements KeyguardMonitor.Callback {
+        @Override
+        public void onKeyguardShowingChanged() {
+            refreshState();
+        }
+    };
 }
