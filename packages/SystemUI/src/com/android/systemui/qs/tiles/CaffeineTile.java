@@ -74,6 +74,7 @@ public class CaffeineTile extends QSTileImpl<BooleanState> {
 
     @Override
     protected void handleLongClick() {
+            handleClick();
     }
 
     @Override
