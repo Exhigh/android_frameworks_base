@@ -104,7 +104,7 @@ private static final String SETTING_USER_PREF_DATA_SUB = "user_preferred_data_su
                     formatDataUsage(info.usageLevel));
             bottom = res.getString(R.string.quick_settings_cellular_detail_data_limit,
                     formatDataUsage(info.limitLevel));
-            usageColor = Utils.getColorAttr(mContext, android.R.attr.colorError);
+            usageColor = Utils.getColorStateListDefaultColor(mContext, android.R.attr.colorError);
         }
 
         if (usageColor == 0) {
