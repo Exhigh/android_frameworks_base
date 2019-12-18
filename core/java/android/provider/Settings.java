@@ -5066,13 +5066,6 @@ public final class Settings {
                 new SettingsValidators.InclusiveIntegerRangeValidator(500, 10000);;
 
         /**
-         * Whether to enable gaming mode or not
-         *
-         * @hide
-         */
-        public static final String ENABLE_GAMING_MODE = "enable_gaming_mode";
-
-        /**
          * @hide
          */
         public static final String GLOBAL_ACTIONS_LIST = "global_actions_list";

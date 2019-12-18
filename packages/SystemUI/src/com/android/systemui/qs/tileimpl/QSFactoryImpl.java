@@ -64,9 +64,12 @@ import com.android.systemui.qs.tiles.WorkModeTile;
 import com.android.systemui.qs.QSTileHost;
 import com.android.systemui.util.leak.GarbageMonitor;
 import com.android.systemui.qs.tiles.WeatherTile;
+<<<<<<< HEAD
 import com.android.systemui.qs.tiles.GamingModeTile;
 import com.android.systemui.qs.tiles.AODTile;
 import com.android.systemui.qs.tiles.OneHandTile;
+=======
+>>>>>>> parent of 23695fe65e74... SystemUI: Add Gaming mode tile
 
 public class QSFactoryImpl implements QSFactory {
 
@@ -159,8 +162,6 @@ public class QSFactoryImpl implements QSFactory {
                 return new SmartPixelsTile(mHost);
             case "weather":
                 return new WeatherTile(mHost);
-            case "gaming":
-                return new GamingModeTile(mHost);
             case "aod":
                 return new AODTile(mHost);
             case "onehand":
