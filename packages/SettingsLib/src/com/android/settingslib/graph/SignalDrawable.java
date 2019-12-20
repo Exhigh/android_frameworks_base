@@ -286,7 +286,8 @@ public class SignalDrawable extends DrawableWrapper {
 
     /** Returns the state representing empty mobile signal with the given number of levels. */
     public static int getEmptyState(int numLevels) {
-        return getState(0, numLevels, true);
+        // TODO empty state == 0 state. does there need to be a new drawable for this?
+        return getState(0, numLevels, false);
     }
 
     /** Returns the state representing carrier change with the given number of levels. */
