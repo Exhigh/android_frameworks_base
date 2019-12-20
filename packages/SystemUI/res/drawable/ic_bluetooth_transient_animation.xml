@@ -1,5 +1,5 @@
-<!--
-     Copyright (C) 2017 The Android Open Source Project
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2017 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
 -->
 <animated-vector
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ic_volume_collapse" >
+    android:drawable="@drawable/ic_bluetooth_transient" >
     <target
-        android:name="right"
-        android:animation="@anim/ic_caret_down_right_animation" />
+        android:name="dot_left"
+        android:animation="@anim/ic_bluetooth_transient_dot_left_animation" />
     <target
-        android:name="left"
-        android:animation="@anim/ic_caret_down_left_animation" />
+        android:name="dot_right"
+        android:animation="@anim/ic_bluetooth_transient_dot_right_animation" />
 </animated-vector>
