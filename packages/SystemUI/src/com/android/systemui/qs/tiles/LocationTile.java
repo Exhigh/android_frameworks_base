@@ -49,7 +49,12 @@ import com.android.internal.logging.nano.MetricsProto;
 
 /** Quick settings tile: Location **/
 public class LocationTile extends QSTileImpl<BooleanState> {
-
+	
+	private static final int OFF = Settings.Secure.LOCATION_MODE_OFF;
+	private static final int HIGH_ACCURACY = Settings.Secure.LOCATION_MODE_HIGH_ACCURACY;
+    private static final int BATTERY_SAVING = Settings.Secure.LOCATION_MODE_BATTERY_SAVING;
+	private static final int SENSORS_ONLY = Settings.Secure.LOCATION_MODE_SENSORS_ONLY;
+	
     private final Icon mIcon = ResourceIcon.get(drawable.ic_signal_location);
 
     private static final Intent LOCATION_SETTINGS_INTENT =
@@ -91,6 +96,7 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 
     @Override
     public void handleSetListening(boolean listening) {
+        if (mController == null) return;
         if (listening) {
             mController.addCallback(mCallback);
             mKeyguard.addCallback(mCallback);
@@ -106,28 +112,40 @@ public class LocationTile extends QSTileImpl<BooleanState> {
     }
 
     @Override
-    protected void handleClick() {
-        final boolean wasEnabled = mState.value;
+    protected void handleClick() { 
         MetricsLogger.action(mContext, getMetricsCategory(), !wasEnabled);
-        mController.setLocationEnabled(!wasEnabled);
+        switchMode();
     }
 
     @Override
     protected void handleSecondaryClick() {
         if (mKeyguard.isSecure() && mKeyguard.isShowing()) {
             Dependency.get(ActivityStarter.class).postQSRunnableDismissingKeyguard(() -> {
-                final boolean wasEnabled = mState.value;
                 mHost.openPanels();
-                mController.setLocationEnabled(!wasEnabled);
+                switchMode();
             });
             return;
         }
-        final boolean wasEnabled = mState.value;
-        if (!wasEnabled) {
-            mController.setLocationEnabled(!wasEnabled);
-        }
+        switchMode();
         showDetail(true);
     }
+	
+	private void switchMode() {
+        int currentMode = mController.getLocationCurrentState();
+		
+        if (currentMode == BATTERY_SAVING) {
+            //from battery saving to sensor only
+			mController.setLocationEnabled(SENSORS_ONLY);
+        } else if (currentMode == SENSORS_ONLY) {
+            //from sensor only to off
+            mController.setLocationEnabled(OFF);
+        } else if (currentMode == HIGH_ACCURACY) {
+            //from high precision to battery saving
+            mController.setLocationEnabled(BATTERY_SAVING);
+        } else if {currentMode == OFF)
+            //from off to high precision
+			mController.setLocationEnabled(HIGH_ACCURACY);
+        }
 
     @Override
     public CharSequence getTileLabel() {
@@ -136,42 +154,42 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 
     @Override
     protected void handleUpdateState(BooleanState state, Object arg) {
-        if (state.slash == null) {
-            state.slash = new SlashState();
+         if (mController == null) {
+            return;
         }
-        int currentState = arg instanceof Integer ? (Integer) arg :
-                mController.getLocationCurrentState();
-        final boolean newValue = currentState != Settings.Secure.LOCATION_MODE_OFF;
-        final boolean valueChanged = state.value != newValue;
-
+		
         // Work around for bug 15916487: don't show location tile on top of lock screen. After the
         // bug is fixed, this should be reverted to only hiding it on secure lock screens:
         // state.visible = !(mKeyguard.isSecure() && mKeyguard.isShowing());
-        state.value = newValue;
+        
         state.dualTarget = true;
         checkIfRestrictionEnforcedByAdminOnly(state, UserManager.DISALLOW_SHARE_LOCATION);
         if (state.disabledByPolicy == false) {
             checkIfRestrictionEnforcedByAdminOnly(state, UserManager.DISALLOW_CONFIG_LOCATION);
         }
+		final boolean locationEnabled =  mController.isLocationEnabled();
+		int currentState = arg instanceof Integer ? (Integer) arg :
+                mController.getLocationCurrentState();
+		int currentMode = mController.getLocationCurrentState();
         state.label = mContext.getString(getStateLabelRes(currentState));
-        state.slash.isSlashed = currentState == Settings.Secure.LOCATION_MODE_OFF;
-        switch (currentState) {
-            case Settings.Secure.LOCATION_MODE_OFF:
+        
+        switch (currentMode) {
+            case OFF:
                 state.contentDescription = mContext.getString(
                         R.string.accessibility_quick_settings_location_off);
                 state.icon = mIcon;
                 break;
-            case Settings.Secure.LOCATION_MODE_HIGH_ACCURACY:
+            case HIGH_ACCURACY:
                 state.contentDescription = mContext.getString(
                         R.string.accessibility_quick_settings_location_high_accuracy);
                state.icon = ResourceIcon.get(R.drawable.ic_qs_location_high_accuracy);
                 break;
-            case Settings.Secure.LOCATION_MODE_BATTERY_SAVING:
+            case BATTERY_SAVING:
                 state.contentDescription = mContext.getString(
                         R.string.accessibility_quick_settings_location_battery_saving);
                 state.icon = ResourceIcon.get(R.drawable.ic_qs_location_battery_saving);
                 break;
-            case Settings.Secure.LOCATION_MODE_SENSORS_ONLY:
+            case SENSORS_ONLY:
                 state.contentDescription = mContext.getString(
                         R.string.accessibility_quick_settings_location_gps_only);
                 state.icon = ResourceIcon.get(R.drawable.ic_qs_location_sensors_only);
@@ -190,13 +208,13 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 
     private int getStateLabelRes(int currentState) {
         switch (currentState) {
-            case Settings.Secure.LOCATION_MODE_OFF:
+            case OFF:
                 return R.string.quick_settings_location_off_label;
-            case Settings.Secure.LOCATION_MODE_HIGH_ACCURACY:
+            case HIGH_ACCURACY:
                 return R.string.quick_settings_location_high_accuracy_label;
-            case Settings.Secure.LOCATION_MODE_BATTERY_SAVING:
+            case BATTERY_SAVING:
                 return R.string.quick_settings_location_battery_saving_label;
-            case Settings.Secure.LOCATION_MODE_SENSORS_ONLY:
+            case SENSORS_ONLY:
                 return R.string.quick_settings_location_gps_only_label;
             default:
                 return R.string.quick_settings_location_label;
@@ -258,7 +276,7 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 
         @Override
         public void setToggleState(boolean state) {
-            MetricsLogger.action(mContext, MetricsEvent.QS_DND_TOGGLE, state);
+            MetricsLogger.action(mContext, MetricsEvent.QS_LOCATION, state);
             if (!state) {
                 mController.setLocationEnabled(state);
                 showDetail(false);
@@ -336,4 +354,3 @@ public class LocationTile extends QSTileImpl<BooleanState> {
             }
         };
     }
-}
