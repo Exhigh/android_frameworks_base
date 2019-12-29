@@ -36,6 +36,7 @@ import android.text.TextUtils;
 import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -171,6 +172,11 @@ public class KeyguardSliceView extends LinearLayout implements View.OnClickListe
             }
             return;
         }
+
+        final ContentResolver resolver = mContext.getContentResolver();
+        boolean mClockSelection = Settings.System.getIntForUser(resolver,
+                Settings.System.LOCKSCREEN_CLOCK_SELECTION, 0, UserHandle.USER_CURRENT) == 15;
+
 
         ListContent lc = new ListContent(getContext(), mSlice);
         mHasHeader = lc.hasHeader();

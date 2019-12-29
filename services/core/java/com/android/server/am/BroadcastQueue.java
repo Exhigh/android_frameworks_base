@@ -101,9 +101,15 @@ public final class BroadcastQueue {
     final ArrayList<BroadcastRecord> mParallelBroadcasts = new ArrayList<>();
 
     /**
+     * List of all active broadcasts that are to be executed one at a time.
+     * The object at the top of the list is the currently activity broadcasts;
+     * those after it are waiting for the top to finish.  As with parallel
+     * broadcasts, separate background- and foreground-priority queues are
+     * maintained.
      * Tracking of the ordered broadcast queue, including deferral policy and alarm
      * prioritization.
      */
+    final ArrayList<BroadcastRecord> mOrderedBroadcasts = new ArrayList<>();
     final BroadcastDispatcher mDispatcher;
 
     /**

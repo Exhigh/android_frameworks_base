@@ -113,7 +113,6 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 
     @Override
     protected void handleClick() { 
-        MetricsLogger.action(mContext, getMetricsCategory(), !wasEnabled);
         switchMode();
     }
 
@@ -135,17 +134,18 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 		
         if (currentMode == BATTERY_SAVING) {
             //from battery saving to sensor only
-			mController.setLocationEnabled(SENSORS_ONLY);
+	    mController.setLocationMode(SENSORS_ONLY);
         } else if (currentMode == SENSORS_ONLY) {
             //from sensor only to off
-            mController.setLocationEnabled(OFF);
+            mController.setLocationMode(OFF);
         } else if (currentMode == HIGH_ACCURACY) {
             //from high precision to battery saving
-            mController.setLocationEnabled(BATTERY_SAVING);
-        } else if {currentMode == OFF)
+            mController.setLocationMode(BATTERY_SAVING);
+        } else if (currentMode == OFF) {
             //from off to high precision
-			mController.setLocationEnabled(HIGH_ACCURACY);
+	    mController.setLocationMode(HIGH_ACCURACY);
         }
+    }
 
     @Override
     public CharSequence getTileLabel() {
@@ -154,6 +154,9 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 
     @Override
     protected void handleUpdateState(BooleanState state, Object arg) {
+         if (state.slash == null) {
+            state.slash = new SlashState();
+        }
          if (mController == null) {
             return;
         }
@@ -161,6 +164,7 @@ public class LocationTile extends QSTileImpl<BooleanState> {
         // Work around for bug 15916487: don't show location tile on top of lock screen. After the
         // bug is fixed, this should be reverted to only hiding it on secure lock screens:
         // state.visible = !(mKeyguard.isSecure() && mKeyguard.isShowing());
+        
         
         state.dualTarget = true;
         checkIfRestrictionEnforcedByAdminOnly(state, UserManager.DISALLOW_SHARE_LOCATION);
@@ -170,8 +174,11 @@ public class LocationTile extends QSTileImpl<BooleanState> {
 		final boolean locationEnabled =  mController.isLocationEnabled();
 		int currentState = arg instanceof Integer ? (Integer) arg :
                 mController.getLocationCurrentState();
+                final boolean newValue = currentState != OFF; 
+                state.value = newValue;       
+                final boolean valueChanged = state.value != newValue;
 		int currentMode = mController.getLocationCurrentState();
-        state.label = mContext.getString(getStateLabelRes(currentState));
+                state.label = mContext.getString(getStateLabelRes(currentState));
         
         switch (currentMode) {
             case OFF:
@@ -354,3 +361,4 @@ public class LocationTile extends QSTileImpl<BooleanState> {
             }
         };
     }
+}

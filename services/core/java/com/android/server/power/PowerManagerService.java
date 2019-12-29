@@ -538,6 +538,9 @@ public final class PowerManagerService extends SystemService
     // True if we are currently in light device idle mode.
     private boolean mLightDeviceIdleMode;
 
+    // overrule and disable brightness for buttons
+    private boolean mHardwareKeysDisable = false;
+
     // Set of app ids that we will always respect the wake locks for.
     int[] mDeviceIdleWhitelist = new int[0];
 

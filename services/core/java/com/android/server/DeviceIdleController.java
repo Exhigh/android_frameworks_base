@@ -173,6 +173,15 @@ public class DeviceIdleController extends SystemService
      */
     static final int STATE_QUICK_DOZE_DELAY = 7;
 
+    private static final int ACTIVE_REASON_UNKNOWN = 0;
+    private static final int ACTIVE_REASON_MOTION = 1;
+    private static final int ACTIVE_REASON_SCREEN = 2;
+    private static final int ACTIVE_REASON_CHARGING = 3;
+    private static final int ACTIVE_REASON_UNLOCKED = 4;
+    private static final int ACTIVE_REASON_FROM_BINDER_CALL = 5;
+    private static final int ACTIVE_REASON_FORCED = 6;
+    private static final int ACTIVE_REASON_ALARM = 7;
+
     private static String stateToString(int state) {
         switch (state) {
             case STATE_ACTIVE: return "ACTIVE";
@@ -233,6 +242,8 @@ public class DeviceIdleController extends SystemService
     private PowerManager.WakeLock mGoingIdleWakeLock;  // held when we are going idle so hardware
                                                        // (especially NetworkPolicyManager) can shut
                                                        // down.
+    private float mPreIdleFactor;
+    private int mActiveReason;
     private boolean mJobsActive;
     private boolean mAlarmsActive;
     private boolean mReportedMaintenanceActivity;
@@ -428,7 +439,7 @@ public class DeviceIdleController extends SystemService
         }
     };
 
-    @VisibleForTesting
+    //@VisibleForTesting
     final AlarmManager.OnAlarmListener mDeepAlarmListener
             = new AlarmManager.OnAlarmListener() {
         @Override
@@ -1569,6 +1580,8 @@ public class DeviceIdleController extends SystemService
             mState = STATE_ACTIVE;
             mLightState = LIGHT_STATE_ACTIVE;
             mInactiveTimeout = mConstants.INACTIVE_TIMEOUT;
+            mPreIdleFactor = 1.0f;
+            mActiveReason = ACTIVE_REASON_UNKNOWN;
         }
 
         mBinderService = new BinderService();
@@ -2101,6 +2114,7 @@ public class DeviceIdleController extends SystemService
 
     public void exitIdleInternal(String reason) {
         synchronized (this) {
+            mActiveReason = ACTIVE_REASON_FROM_BINDER_CALL;
             becomeActiveLocked(reason, Binder.getCallingUid());
         }
     }
@@ -2142,7 +2156,7 @@ public class DeviceIdleController extends SystemService
         }
     }
 
-    @VisibleForTesting
+    //@VisibleForTesting
     boolean isScreenOn() {
         synchronized (this) {
             return mScreenOn;
@@ -2163,12 +2177,13 @@ public class DeviceIdleController extends SystemService
         } else if (screenOn) {
             mScreenOn = true;
             if (!mForceIdle && (!mScreenLocked || !mConstants.WAIT_FOR_UNLOCK)) {
+                mActiveReason = ACTIVE_REASON_SCREEN;
                 becomeActiveLocked("screen", Process.myUid());
             }
         }
     }
 
-    @VisibleForTesting
+    //@VisibleForTesting
     boolean isCharging() {
         synchronized (this) {
             return mCharging;
@@ -2185,12 +2200,13 @@ public class DeviceIdleController extends SystemService
         } else if (charging) {
             mCharging = charging;
             if (!mForceIdle) {
+                mActiveReason = ACTIVE_REASON_CHARGING;
                 becomeActiveLocked("charging", Process.myUid());
             }
         }
     }
 
-    @VisibleForTesting
+    //@VisibleForTesting
     boolean isQuickDozeEnabled() {
         synchronized (this) {
             return mQuickDozeActivated;
@@ -2198,7 +2214,7 @@ public class DeviceIdleController extends SystemService
     }
 
     /** Updates the quick doze flag and enters deep doze if appropriate. */
-    @VisibleForTesting
+    //@VisibleForTesting
     void updateQuickDozeFlagLocked(boolean enabled) {
         if (DEBUG) Slog.i(TAG, "updateQuickDozeFlagLocked: enabled=" + enabled);
         mQuickDozeActivated = enabled;
@@ -2213,25 +2229,26 @@ public class DeviceIdleController extends SystemService
 
 
     /** Returns true if the screen is locked. */
-    @VisibleForTesting
+    //@VisibleForTesting
     boolean isKeyguardShowing() {
         synchronized (this) {
             return mScreenLocked;
         }
     }
 
-    @VisibleForTesting
+    //@VisibleForTesting
     void keyguardShowingLocked(boolean showing) {
         if (DEBUG) Slog.i(TAG, "keyguardShowing=" + showing);
         if (mScreenLocked != showing) {
             mScreenLocked = showing;
             if (mScreenOn && !mForceIdle && !mScreenLocked) {
+                mActiveReason = ACTIVE_REASON_UNLOCKED;
                 becomeActiveLocked("unlocked", Process.myUid());
             }
         }
     }
 
-    @VisibleForTesting
+    //@VisibleForTesting
     void scheduleReportActiveLocked(String activeReason, int activeUid) {
         Message msg = mHandler.obtainMessage(MSG_REPORT_ACTIVE, activeUid, 0, activeReason);
         mHandler.sendMessage(msg);
@@ -2365,12 +2382,13 @@ public class DeviceIdleController extends SystemService
         if (mForceIdle) {
             mForceIdle = false;
             if (mScreenOn || mCharging) {
+                mActiveReason = ACTIVE_REASON_FORCED;
                 becomeActiveLocked("exit-force", Process.myUid());
             }
         }
     }
 
-    @VisibleForTesting
+    //@VisibleForTesting
     int getLightState() {
         return mLightState;
     }   
@@ -2466,6 +2484,7 @@ public class DeviceIdleController extends SystemService
         if ((now+mConstants.MIN_TIME_TO_ALARM) > mAlarmManager.getNextWakeFromIdleTime()) {
             // Whoops, there is an upcoming alarm.  We don't actually want to go idle.
             if (mState != STATE_ACTIVE) {
+                mActiveReason = ACTIVE_REASON_ALARM;
                 becomeActiveLocked("alarm", Process.myUid());
                 becomeInactiveIfAppropriateLocked();
             }
@@ -2699,6 +2718,15 @@ public class DeviceIdleController extends SystemService
             stepIdleStateLocked("s:location");
         }
     }
+
+    private boolean shouldUseIdleTimeoutFactorLocked() {
+        // exclude ACTIVE_REASON_MOTION, for exclude device in pocket case
+        if (mActiveReason == ACTIVE_REASON_MOTION) {
+            return false;
+        }
+        return true;
+    }
+
 
     void receivedGpsLocationLocked(Location location) {
         if (mState != STATE_LOCATING) {
@@ -3243,6 +3271,7 @@ public class DeviceIdleController extends SystemService
                         }
                     }
                     if (becomeActive) {
+                        mActiveReason = ACTIVE_REASON_FORCED;
                         becomeActiveLocked((arg == null ? "all" : arg) + "-disabled",
                                 Process.myUid());
                     }

@@ -2127,6 +2127,7 @@ class GlobalActionsDialog implements DialogInterface.OnDismissListener,
         } catch (RemoteException e) {
             Log.e(TAG, "failure trying to perform hot reboot", e);
         }   
+    }
 
     public static void restartSystemUI() {
         Process.killProcess(Process.myPid());

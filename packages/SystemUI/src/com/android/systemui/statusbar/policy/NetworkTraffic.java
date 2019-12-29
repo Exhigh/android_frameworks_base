@@ -200,8 +200,8 @@ public class NetworkTraffic extends TextView {
         int dualToneDarkTheme = Utils.getThemeAttr(mContext, R.attr.darkIconTheme);
         ContextThemeWrapper mLightContext = new ContextThemeWrapper(mContext, dualToneLightTheme);
         ContextThemeWrapper mDarkContext = new ContextThemeWrapper(mContext, dualToneDarkTheme);
-        mDarkModeFillColor = Utils.getColorAttr(mDarkContext, R.attr.fillColor);
-        mLightModeFillColor = Utils.getColorAttr(mLightContext, R.attr.fillColor);
+        mDarkModeFillColor = Utils.getColorAttrDefaultColor(mDarkContext, R.attr.fillColor);
+        mLightModeFillColor = Utils.getColorAttrDefaultColor(mLightContext, R.attr.fillColor);
         setTextColor(mTintColor);
         Handler mHandler = new Handler();
         SettingsObserver settingsObserver = new SettingsObserver(mHandler);

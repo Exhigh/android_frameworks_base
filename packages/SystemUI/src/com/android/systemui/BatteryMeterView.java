@@ -92,6 +92,7 @@ public class BatteryMeterView extends LinearLayout implements
     private int mStyle = BatteryMeterDrawableBase.BATTERY_STYLE_PORTRAIT;
     private boolean mQsHeaderOrKeyguard;
     private boolean misQsbHeader;
+    private int mShowPercent;
     private boolean mCharging;
     private boolean mPowerSave;
 
@@ -306,6 +307,7 @@ public class BatteryMeterView extends LinearLayout implements
 
     private void updatePercentSize() {
         if (mPercentageSize != 0) {
+            Typeface tf = Typeface.create(FONT_FAMILY, Typeface.NORMAL);
             mBatteryPercentView.setTypeface(tf);
             mBatteryPercentView.setTextSize(TypedValue.COMPLEX_UNIT_PX, mPercentageSize);
 			
@@ -324,6 +326,7 @@ public class BatteryMeterView extends LinearLayout implements
         // Use the high voltage symbol ⚡ (u26A1 unicode) but prevent the system
         // to load its emoji colored variant with the uFE0E flag
         String bolt = "\u26A1\uFE0E";
+        Typeface tf = Typeface.create(FONT_FAMILY, Typeface.NORMAL);
         CharSequence mChargeIndicator =
                 mCharging && getMeterStyle() == BatteryMeterDrawableBase.BATTERY_STYLE_TEXT
                 ? (bolt + " ") : "";
@@ -353,6 +356,9 @@ public class BatteryMeterView extends LinearLayout implements
         final boolean showingInside = Settings.System.getIntForUser(
                 getContext().getContentResolver(), SHOW_BATTERY_PERCENT, 0, mUser) == 2;
         final boolean showingOutside = mBatteryPercentView != null;
+        int percentageStyle = Settings.System.getIntForUser(getContext().getContentResolver(),
+                SHOW_BATTERY_PERCENT, 0, mUser);
+        mShowPercent = percentageStyle;
         boolean showAnyway = alwaysShowPercentage();
         if (0 != Settings.System.getIntForUser(getContext().getContentResolver(),
                 SHOW_BATTERY_PERCENT, 0, mUser) || mForceShowPercent || showingText || hideText || forcePercentageQsHeader()) {
@@ -530,11 +536,22 @@ public class BatteryMeterView extends LinearLayout implements
 
         switch (style) {
             case BatteryMeterDrawableBase.BATTERY_STYLE_TEXT:
+                if (mBatteryIconView != null) {
+                    removeView(mBatteryIconView);
+                    mBatteryIconView = null;
+                }
+                break;
             case BatteryMeterDrawableBase.BATTERY_STYLE_HIDDEN:
                 if (mBatteryIconView != null) {
                     removeView(mBatteryIconView);
                     mBatteryIconView = null;
                 }
+
+                if (mBatteryPercentView != null) {
+                    removeView(mBatteryPercentView);
+                    mBatteryPercentView = null;
+                }
+
                 break;
             default:
                 if (mBatteryPercentView != null) {
@@ -559,6 +576,10 @@ public class BatteryMeterView extends LinearLayout implements
 
         updateShowPercent();
         onDensityOrFontScaleChanged();
+    }
+
+    private int getMeterStyle() {
+        return mDrawable.getMeterStyle();
     }
 
     @Override

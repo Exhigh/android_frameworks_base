@@ -134,7 +134,6 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
     private UserActivityListener mUserActivityListener;
 
     protected final VC mVolumeController = new VC();
-    private boolean mIsInternalAudioRecordingSupported;
 
     private boolean mIsInternalAudioRecordingSupported;
 

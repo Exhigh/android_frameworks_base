@@ -5659,7 +5659,6 @@ public final class Settings {
         public static final Validator LIVE_DISPLAY_HINTED_VALIDATOR =
                 new SettingsValidators.InclusiveIntegerRangeValidator(-3, 1);
 
-
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.

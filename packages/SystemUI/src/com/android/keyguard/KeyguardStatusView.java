@@ -113,6 +113,7 @@ public class KeyguardStatusView extends GridLayout implements
         @Override
         public void onTimeChanged() {
             refreshTime();
+            
         }
 
         @Override
@@ -372,6 +373,7 @@ public class KeyguardStatusView extends GridLayout implements
     public void dozeTimeTick() {
         refreshTime();
         mKeyguardSlice.refresh();
+       
     }
 
     private void refreshTime() {
@@ -605,8 +607,8 @@ public class KeyguardStatusView extends GridLayout implements
                 Settings.System.LOCKSCREEN_CLOCK, 1, UserHandle.USER_CURRENT) == 1;
         mClockSelection = Settings.System.getIntForUser(resolver,
                 Settings.System.LOCKSCREEN_CLOCK_SELECTION, 0, UserHandle.USER_CURRENT);
-
         setStyle();
+        
 
         final Resources res = getContext().getResources();
         mShowWeather = Settings.System.getIntForUser(resolver,

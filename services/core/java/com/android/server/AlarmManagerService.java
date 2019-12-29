@@ -1356,7 +1356,7 @@ class AlarmManagerService extends SystemService {
             final long systemBuildTime =  Long.max(
                     1000L * SystemProperties.getLong("ro.build.date.utc", -1L),
                     Long.max(Environment.getRootDirectory().lastModified(), Build.TIME));
-            if (mInjector.getCurrentTimeMillis < systemBuildTime) {
+            if (mInjector.getCurrentTimeMillis() < systemBuildTime) {
                 Slog.i(TAG, "Current time only " + mInjector.getCurrentTimeMillis()
                         + ", advancing to build time " + systemBuildTime);
                 mInjector.setKernelTime(systemBuildTime);
@@ -2081,7 +2081,7 @@ class AlarmManagerService extends SystemService {
             pw.print("  Next wakeup alarm: "); TimeUtils.formatDuration(mNextWakeup, nowELAPSED, pw);
                     pw.print(" = "); pw.print(mNextWakeup);
                     pw.print(" = "); pw.println(sdf.format(new Date(nextWakeupRTC)));
-            pw.print("    set at "); TimeUtils.formatDuration(mLastWakeupSet, nowELAPSED, pw);
+            pw.print("    set at "); TimeUtils.formatDuration(mLastWakeup, nowELAPSED, pw);
                     pw.println();
             pw.print("  Next kernel non-wakeup alarm: ");
             TimeUtils.formatDuration(mInjector.getNextAlarm(ELAPSED_REALTIME), pw);
@@ -3215,13 +3215,13 @@ class AlarmManagerService extends SystemService {
                         exemptOnBatterySaver);
     }
 
-    private static long init();
-    private static void close(long nativeData);
-    private static int set(long nativeData, int type, long seconds, long nanoseconds);
-    private static int waitForAlarm(long nativeData);
-    private static int setKernelTime(long nativeData, long millis);
-    private static int setKernelTimezone(long nativeData, int minuteswest);
-    private static long getNextAlarm(long nativeData, int type);
+    private static native long init();
+    private static native void close(long nativeData);
+    private static native int set(long nativeData, int type, long seconds, long nanoseconds);
+    private static native int waitForAlarm(long nativeData);
+    private static native int setKernelTime(long nativeData, long millis);
+    private static native int setKernelTimezone(long nativeData, int minuteswest);
+    private static native long getNextAlarm(long nativeData, int type);
 
     private long getWhileIdleMinIntervalLocked(int uid) {
         final boolean dozing = mPendingIdleUntil != null;

@@ -283,7 +283,7 @@ public class VolumeDialogImpl implements VolumeDialog {
 
         mActiveTint = ColorStateList.valueOf(Utils.getColorAccent(mContext));
         mActiveAlpha = Color.alpha(mActiveTint.getDefaultColor());
-        mInactiveTint = ColorStateList.valueOf(Utils.getColorAttrDefaultColor(mContext));
+        mInactiveTint = ColorStateList.valueOf(Utils.getColorAccent(mContext));
         mInactiveAlpha = getAlphaAttr(android.R.attr.secondaryContentAlpha);
         mDialogRowsView = mDialog.findViewById(R.id.volume_dialog_rows);
         mRinger = mDialog.findViewById(R.id.ringer);

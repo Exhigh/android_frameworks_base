@@ -140,13 +140,13 @@ public class QuickStatusBarHeader extends RelativeLayout implements
 
     private boolean mLandscape;
     private boolean mHeaderImageEnabled;
-
+    
+    private NetworkTraffic mTraffic;
 
 
     private class RRSettingsObserver extends ContentObserver {
         RRSettingsObserver(Handler handler) {
-    private NetworkTraffic mTraffic;
-            super(handler);
+         super(handler);
    }
 
         void observe() {

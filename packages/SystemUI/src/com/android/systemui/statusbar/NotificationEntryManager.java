@@ -140,6 +140,8 @@ public class NotificationEntryManager implements Dumpable, NotificationInflater.
     private ExpandableNotificationRow.OnAppOpsClickListener mOnAppOpsClickListener;
     private NotificationData.Entry mEntryToRefresh;
 
+    private boolean mLessBoringHeadsUp;
+
     private String mTrackInfoSeparator;
 
     private boolean mSkipHeadsUp;
@@ -1041,6 +1043,18 @@ public class NotificationEntryManager implements Dumpable, NotificationInflater.
     public void updateNotificationRanking(NotificationListenerService.RankingMap ranking) {
         mNotificationData.updateRanking(ranking);
         updateNotifications();
+    }
+  
+    public void setUseLessBoringHeadsUp(boolean lessBoring) {
+        mLessBoringHeadsUp = lessBoring;
+    }
+
+     public boolean shouldSkipHeadsUp(StatusBarNotification sbn) {
+        boolean isImportantHeadsUp = false;
+        String notificationPackageName = sbn.getPackageName().toLowerCase();
+        isImportantHeadsUp = notificationPackageName.contains("dialer") ||
+                notificationPackageName.contains("messaging");
+        return !mPresenter.isDozing() && mLessBoringHeadsUp && !isImportantHeadsUp;
     }
 
     public void setGamingPeekMode(boolean skipHeadsUp) {
